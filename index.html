@@ -133,8 +133,8 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #f1f5f9; color: 
 .p-asset-name { font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .p-asset-ext { font-size: 9px; color: #94a3b8; text-transform: uppercase; margin-top: 1px; }
 
-/* Status selects — up to 3 columns */
-.p-status-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+/* Status selects — auto-fills any number of columns */
+.p-status-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-bottom: 14px; }
 .p-field label { display: block; font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
 .p-field select { width: 100%; height: 32px; padding: 0 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; font-family: inherit; color: #1e293b; background: #fff; outline: none; cursor: pointer; }
 .p-field select:focus { border-color: #3b82f6; }
@@ -527,9 +527,15 @@ function parseItem(raw, colMap) {
   };
 
   const cv = raw.column_values || [];
-  out._rawCols = cv;
+  // Attach inline column metadata so renderPanel can use it without allBoardCols
+  const enriched = cv.map(c => ({
+    ...c,
+    _colType:  c.column?.type  || '',
+    _colTitle: c.column?.title || '',
+  }));
+  out._rawCols = enriched;
 
-  cv.forEach(col => {
+  enriched.forEach(col => {
     const val  = col.value;
     const text = (col.text || '').trim();
 
@@ -570,7 +576,7 @@ function parseItem(raw, colMap) {
 
   // ── Fallback 1: scan ALL columns for any files-like data ──
   if (!out.assets.length) {
-    for (const col of cv) {
+    for (const col of enriched) {
       if (col.id === colMap.filesCol || !col.value) continue;
       const files = extractFilesFromColVal(col.value, col.id, raw.name);
       if (files.length) {
@@ -589,7 +595,7 @@ function parseItem(raw, colMap) {
 
   if (!out.assets.length) {
     console.warn(`[FILES] No assets found for "${raw.name}". filesCol="${colMap.filesCol}"`);
-    console.log(`[FILES debug] All column values:`, cv.map(c => ({ id: c.id, value: (c.value || '').slice(0, 100) })));
+    console.log(`[FILES debug] All column values:`, enriched.map(c => ({ id: c.id, value: (c.value || '').slice(0, 100) })));
   }
 
   return out;
@@ -635,7 +641,7 @@ async function fetchItems(colMap) {
 }
 
 async function fetchDetail(itemId, colMap) {
-  // Fetch ALL column values so we can display every status column
+  // Fetch ALL column values with their title and type inline
   const d = await api(`{
     items(ids:[${itemId}]) {
       id name
@@ -649,7 +655,10 @@ async function fetchDetail(itemId, colMap) {
           creator { id name }
         }
       }
-      column_values { id value text }
+      column_values {
+        id value text
+        column { id title type }
+      }
     }
   }`);
   return d?.items?.[0] || null;
@@ -982,16 +991,12 @@ function renderPanel(item) {
     pb.appendChild(empty);
   }
 
-  // ── Status fields — every color column with a value ────
-  // Pull directly from raw column_values so nothing depends on regex detection
+  // ── Status fields — every color column that has a value ─
+  // column_values now includes column.type and column.title inline
   const rawCV = item._rawCols || [];
-  const colorCols = allBoardCols.filter(c => c.type === 'color');
-  const statusFields = colorCols
-    .map(c => {
-      const cv = rawCV.find(r => r.id === c.id);
-      return { id: c.id, label: c.title, value: (cv?.text || '').trim() };
-    })
-    .filter(f => f.value); // only show columns that have a value
+  const statusFields = rawCV
+    .filter(cv => cv._colType === 'color' && cv._colTitle && (cv.text || '').trim())
+    .map(cv => ({ id: cv.id, label: cv._colTitle, value: (cv.text || '').trim() }));
 
   if (statusFields.length) {
     pb.appendChild(mkdiv());
@@ -1000,16 +1005,24 @@ function renderPanel(item) {
       const sf = el('div', 'p-field');
       const lbl = document.createElement('label'); lbl.textContent = label; sf.appendChild(lbl);
       const sel = document.createElement('select');
-      // Always include the current value so it shows even if not in default list
-      const defaultOpts = ['Pending','Ready For Client Review','Ready for Client Review','Approved','Amends Required','In Production','On Hold','Cancelled'];
-      const opts = defaultOpts.includes(value) ? defaultOpts : [value, ...defaultOpts];
+      // Include current value always, plus common options
+      const baseOpts = ['Pending','To Be Briefed','To Be Written','To Be Scheduled',
+        'Ready For Client Review','Ready for Client Review','Ready for Client Rev...',
+        'In Production','Approved','Amends Required','On Hold','Cancelled','Scheduled'];
+      const opts = [...new Set([value, ...baseOpts])];
       opts.forEach(o => sel.appendChild(new Option(o, o)));
       sel.value = value;
-      sel.addEventListener('change', () => updateCol(item.id, id, sel.value).catch(console.error));
+      const c = statusColour(value);
+      sel.style.cssText = `font-weight:600;color:${c};border-color:${c}55;`;
+      sel.addEventListener('change', () => {
+        const newC = statusColour(sel.value);
+        sel.style.cssText = `font-weight:600;color:${newC};border-color:${newC}55;`;
+        updateCol(item.id, id, sel.value).catch(console.error);
+      });
       sf.appendChild(sel);
       row.appendChild(sf);
     });
-    pb.appendChild(row);
+    if (row.children.length) pb.appendChild(row);
   }
 
   // ── Meta grid ──────────────────────────────────────────
