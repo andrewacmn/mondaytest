@@ -7,169 +7,201 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', system-ui, sans-serif; background: #f1f5f9; color: #1e293b; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; color: #1e293b; height: 100vh; display: flex; flex-direction: column; overflow: hidden; font-size: 13px; }
 
-/* ── Loading ── */
+/* ── Screens ── */
 #loading-screen { position: fixed; inset: 0; background: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; z-index: 900; }
-#loading-screen .logo { font-size: 18px; font-weight: 700; color: #0f172a; }
-#loading-screen .sub { font-size: 12px; color: #94a3b8; }
-.spinner { width: 28px; height: 28px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.7s linear infinite; }
+.spinner { width: 26px; height: 26px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+#error-screen { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 40px; text-align: center; }
+.err-title { font-size: 16px; font-weight: 700; }
+.err-msg { font-size: 12px; color: #64748b; max-width: 440px; line-height: 1.5; }
+.err-code { font-size: 11px; color: #ef4444; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 8px 12px; max-width: 440px; word-break: break-all; }
+.retry-btn { margin-top: 6px; height: 34px; padding: 0 16px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
 
-/* ── Error ── */
-#error-screen { position: fixed; inset: 0; background: #f8fafc; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 40px; text-align: center; }
-#error-screen .err-title { font-size: 16px; font-weight: 700; color: #0f172a; }
-#error-screen .err-msg { font-size: 13px; color: #64748b; max-width: 420px; line-height: 1.5; }
-#error-screen .err-detail { font-size: 11px; color: #ef4444; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 8px 12px; max-width: 420px; word-break: break-all; }
-.retry-btn { height: 36px; padding: 0 18px; background: #3b82f6; color: #fff; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
-.retry-btn:hover { background: #2563eb; }
-
-/* ── App ── */
+/* ── App shell ── */
 #app { display: none; flex-direction: column; height: 100vh; }
-#header { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 12px; }
-#header-left h1 { font-size: 16px; font-weight: 700; color: #0f172a; }
-#header-left p { font-size: 11px; color: #94a3b8; margin-top: 1px; }
-#nav { display: flex; align-items: center; gap: 7px; }
-.nav-btn { width: 28px; height: 28px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; cursor: pointer; font-size: 16px; color: #64748b; display: flex; align-items: center; justify-content: center; transition: background 0.1s; }
+
+/* ── Header bar ── */
+#header { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 12px; }
+#header h1 { font-size: 15px; font-weight: 700; color: #0f172a; }
+#header p { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+#nav { display: flex; align-items: center; gap: 6px; }
+.nav-btn { width: 26px; height: 26px; border: 1px solid #e2e8f0; border-radius: 5px; background: #fff; cursor: pointer; font-size: 16px; color: #64748b; display: flex; align-items: center; justify-content: center; }
 .nav-btn:hover { background: #f8fafc; }
-#week-label { font-size: 13px; font-weight: 600; color: #1e293b; min-width: 190px; text-align: center; }
-.hbtn { height: 28px; padding: 0 10px; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; cursor: pointer; font-size: 11px; font-weight: 500; color: #475569; font-family: inherit; transition: background 0.1s; }
+#week-label { font-size: 12px; font-weight: 600; color: #1e293b; min-width: 180px; text-align: center; }
+.hbtn { height: 26px; padding: 0 10px; border: 1px solid #e2e8f0; border-radius: 5px; background: #fff; cursor: pointer; font-size: 11px; font-weight: 500; color: #475569; font-family: inherit; }
 .hbtn:hover { background: #f8fafc; }
 
-/* ── Calendar ── */
-#calendar { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); overflow: hidden; background: #e2e8f0; gap: 1px; }
-.day-col { background: #fff; display: flex; flex-direction: column; overflow: hidden; }
-.day-col.today { background: #eff6ff; }
-.day-header { padding: 8px 9px 7px; border-bottom: 1px solid #f1f5f9; background: #f8fafc; flex-shrink: 0; }
-.day-col.today .day-header { background: #dbeafe; }
-.day-name { font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 1px; }
-.day-col.today .day-name { color: #3b82f6; }
-.day-num { font-size: 20px; font-weight: 700; color: #1e293b; line-height: 1; }
-.day-col.today .day-num { color: #3b82f6; }
-.day-month { font-size: 9px; color: #94a3b8; margin-top: 1px; }
-.day-count { font-size: 9px; font-weight: 600; color: #64748b; margin-top: 3px; }
-.day-col.today .day-count { color: #3b82f6; }
-.day-posts { flex: 1; overflow-y: auto; padding: 7px 5px; }
-.day-posts::-webkit-scrollbar { width: 3px; }
-.day-posts::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
-.empty-day { display: flex; align-items: center; justify-content: center; height: 50px; color: #dde1e7; font-size: 20px; }
+/* ── Calendar wrapper ── */
+#cal-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-/* ── Item card ── */
-.item-card { border: 1px solid #e2e8f0; border-radius: 7px; overflow: hidden; cursor: pointer; margin-bottom: 6px; background: #fff; transition: box-shadow 0.15s, border-color 0.15s, transform 0.1s; }
-.item-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.09); border-color: #cbd5e1; transform: translateY(-1px); }
-.card-bar { height: 3px; }
-.card-thumb { aspect-ratio: 4/3; background: #f1f5f9; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
-.card-thumb img, .card-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.count-badge { position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.6); color: #fff; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
-.card-meta { padding: 7px 8px; }
-.card-title { font-size: 10px; font-weight: 600; color: #1e293b; line-height: 1.35; margin-bottom: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.card-footer { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
-.card-pill { font-size: 8px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 82px; }
-.card-net { font-size: 9px; color: #94a3b8; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50px; }
+/* ── Sticky day header row ── */
+#cal-header { display: flex; flex-shrink: 0; background: #fff; border-bottom: 2px solid #e2e8f0; z-index: 20; }
+.cal-h-gutter { width: 58px; flex-shrink: 0; border-right: 1px solid #e2e8f0; }
+.cal-h-day { flex: 1; padding: 8px 6px; text-align: center; border-right: 1px solid #f1f5f9; cursor: default; }
+.cal-h-day:last-child { border-right: none; }
+.cal-h-dayname { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px; }
+.cal-h-daynum { font-size: 20px; font-weight: 700; color: #1e293b; line-height: 1.1; margin-top: 1px; }
+.cal-h-day.today .cal-h-dayname { color: #3b82f6; }
+.cal-h-day.today .cal-h-daynum { color: #3b82f6; }
+.cal-h-day .day-count { font-size: 9px; color: #94a3b8; margin-top: 1px; }
+.cal-h-day.today .day-count { color: #3b82f6; }
+
+/* ── Scrollable body ── */
+#cal-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; }
+#cal-grid {
+  display: flex;
+  position: relative;
+  /* Hour lines via repeating gradient, offset past the time gutter */
+  background-image: repeating-linear-gradient(to bottom, transparent 0px, transparent 63px, #f1f5f9 63px, #f1f5f9 64px);
+  background-position: 58px 0;
+  background-size: calc(100% - 58px) 64px;
+}
+
+/* ── Time gutter ── */
+#time-col { width: 58px; flex-shrink: 0; position: relative; border-right: 1px solid #e2e8f0; }
+.time-label { position: absolute; right: 8px; font-size: 9px; font-weight: 500; color: #94a3b8; transform: translateY(-50%); white-space: nowrap; }
+
+/* ── Current time line ── */
+#now-line { position: absolute; left: 0; right: 0; height: 2px; background: #ef4444; z-index: 15; pointer-events: none; }
+#now-line::before { content: ''; position: absolute; left: -1px; top: -4px; width: 10px; height: 10px; background: #ef4444; border-radius: 50%; }
+
+/* ── Day columns ── */
+#days-area { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); position: relative; }
+.day-col { position: relative; border-right: 1px solid #f1f5f9; }
+.day-col:last-child { border-right: none; }
+.day-col.today { background: rgba(59,130,246,0.02); }
+
+/* ── Event blocks on calendar ── */
+.cal-event {
+  position: absolute;
+  left: 3px; right: 3px;
+  min-height: 56px;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  transition: box-shadow 0.15s, transform 0.1s;
+  display: flex;
+  flex-direction: column;
+  z-index: 5;
+}
+.cal-event:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-1px); z-index: 10; }
+.cal-event-bar { height: 3px; flex-shrink: 0; }
+.cal-event-thumb { width: 100%; aspect-ratio: 16/9; background: #f1f5f9; overflow: hidden; flex-shrink: 0; }
+.cal-event-thumb img, .cal-event-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cal-event-body { padding: 4px 6px 5px; flex: 1; display: flex; flex-direction: column; gap: 2px; min-height: 0; }
+.cal-event-time { font-size: 9px; font-weight: 600; color: #94a3b8; }
+.cal-event-title { font-size: 10px; font-weight: 600; color: #1e293b; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.cal-event-status { font-size: 8px; font-weight: 700; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.3px; align-self: flex-start; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.cal-event-nets { display: flex; flex-wrap: wrap; gap: 2px; }
+.cal-event-net { font-size: 8px; background: #f1f5f9; color: #64748b; padding: 1px 4px; border-radius: 3px; }
+.cal-event-type { font-size: 8px; color: #94a3b8; }
 
 /* ── Detail panel ── */
-#panel-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 500; }
-#detail-panel { position: fixed; top: 0; right: -460px; bottom: 0; width: 440px; background: #fff; box-shadow: -8px 0 32px rgba(0,0,0,0.1); z-index: 501; display: flex; flex-direction: column; transition: right 0.24s cubic-bezier(0.4,0,0.2,1); overflow: hidden; }
+#panel-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.2); z-index: 500; }
+#detail-panel { position: fixed; top: 0; right: -480px; bottom: 0; width: 460px; background: #fff; box-shadow: -8px 0 32px rgba(0,0,0,0.1); z-index: 501; display: flex; flex-direction: column; transition: right 0.24s cubic-bezier(0.4,0,0.2,1); overflow: hidden; }
 #detail-panel.open { right: 0; }
-#panel-header { padding: 18px 20px 14px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-shrink: 0; }
-#panel-title { font-size: 17px; font-weight: 700; color: #0f172a; line-height: 1.3; }
-#panel-close { background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 20px; line-height: 1; padding: 2px; flex-shrink: 0; }
-#panel-close:hover { color: #475569; }
-#panel-body { flex: 1; overflow-y: auto; padding: 18px 20px; }
-#panel-body::-webkit-scrollbar { width: 4px; }
-#panel-body::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
+#ph { padding: 16px 20px 12px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-shrink: 0; }
+#pt { font-size: 17px; font-weight: 700; color: #0f172a; line-height: 1.3; }
+#pc { background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 22px; line-height: 1; padding: 0; flex-shrink: 0; }
+#pc:hover { color: #475569; }
+#pb { flex: 1; overflow-y: auto; padding: 16px 20px 24px; }
+#pb::-webkit-scrollbar { width: 4px; }
+#pb::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
 
-/* Panel internals */
-.p-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
-.p-badge { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
-.p-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 18px; }
-.p-mi { background: #f8fafc; border-radius: 7px; padding: 9px 11px; }
+/* Panel components */
+.p-asset-wrap { width: 100%; aspect-ratio: 16/9; background: #111; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+.p-asset-wrap img { width: 100%; height: 100%; object-fit: contain; }
+.p-asset-wrap video { width: 100%; height: 100%; }
+.p-asset-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 100%; background: #f1f5f9; }
+.p-asset-placeholder p { font-size: 12px; color: #94a3b8; }
+.p-asset-open { font-size: 11px; color: #3b82f6; text-decoration: none; margin-top: 2px; }
+.p-asset-open:hover { text-decoration: underline; }
+
+.p-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.p-field label { display: block; font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.p-field select { width: 100%; height: 32px; padding: 0 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; font-family: inherit; color: #1e293b; background: #fff; outline: none; cursor: pointer; }
+.p-field select:focus { border-color: #3b82f6; }
+
+.p-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.p-mi { background: #f8fafc; border-radius: 6px; padding: 8px 10px; }
 .p-mi.full { grid-column: 1/-1; }
-.p-mi-label { font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
-.p-mi-value { font-size: 12px; font-weight: 600; color: #1e293b; }
+.p-mi-l { font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+.p-mi-v { font-size: 12px; font-weight: 600; color: #1e293b; }
 .net-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-.net-tag { font-size: 10px; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
-.p-divider { height: 1px; background: #f1f5f9; margin: 16px 0; }
-.p-section-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
-.p-text-block { background: #f8fafc; border-radius: 7px; padding: 12px 14px; font-size: 12px; color: #334155; line-height: 1.65; white-space: pre-wrap; margin-bottom: 16px; }
-.p-link { font-size: 12px; color: #3b82f6; word-break: break-all; text-decoration: none; }
+.net-tag { font-size: 10px; background: #e2e8f0; color: #475569; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
+
+.p-div { height: 1px; background: #f1f5f9; margin: 14px 0; }
+.p-sec-l { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+.p-textbox { background: #f8fafc; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #334155; line-height: 1.6; white-space: pre-wrap; word-break: break-word; margin-bottom: 12px; }
+.p-link { font-size: 12px; color: #3b82f6; word-break: break-all; text-decoration: none; display: block; margin-bottom: 12px; }
 .p-link:hover { text-decoration: underline; }
 
-/* Status select rows */
-.status-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
-.status-field label { display: block; font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
-.status-field select { width: 100%; height: 34px; padding: 0 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; font-family: inherit; color: #1e293b; background: #fff; outline: none; cursor: pointer; }
-.status-field select:focus { border-color: #3b82f6; }
-
-/* Asset grid in panel */
-.asset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
-.asset-card { border: 1px solid #e2e8f0; border-radius: 7px; overflow: hidden; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
-.asset-card:hover { border-color: #3b82f6; box-shadow: 0 3px 12px rgba(59,130,246,0.12); }
-.asset-thumb { aspect-ratio: 16/9; background: #f1f5f9; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-.asset-thumb img, .asset-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.asset-info { padding: 7px 9px; }
-.asset-name { font-size: 10px; font-weight: 500; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.asset-ext { font-size: 9px; color: #94a3b8; text-transform: uppercase; margin-top: 1px; letter-spacing: 0.4px; }
-.no-assets { background: #f8fafc; border: 1px dashed #e2e8f0; border-radius: 7px; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; margin-bottom: 18px; }
-
-/* Comments */
-.comment-item { background: #f8fafc; border-radius: 7px; padding: 10px 12px; margin-bottom: 8px; }
-.comment-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
-.comment-author { font-size: 11px; font-weight: 600; color: #1e293b; }
+/* Comment section */
+.comment-form-wrap { margin-bottom: 12px; }
+.comment-form-wrap textarea { width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; padding: 9px 11px; font-size: 12px; font-family: inherit; color: #1e293b; resize: none; outline: none; line-height: 1.5; }
+.comment-form-wrap textarea:focus { border-color: #3b82f6; }
+.comment-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
+.post-btn { height: 30px; padding: 0 14px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.post-btn:hover { background: #2563eb; }
+.post-btn:disabled { background: #93c5fd; cursor: not-allowed; }
+.comment-item { background: #f8fafc; border-radius: 6px; padding: 9px 11px; margin-bottom: 8px; }
+.comment-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.comment-author { font-size: 11px; font-weight: 600; color: #0f172a; }
 .comment-date { font-size: 10px; color: #94a3b8; }
 .comment-body { font-size: 12px; color: #334155; line-height: 1.55; white-space: pre-wrap; }
-.no-comments { background: #f8fafc; border-radius: 7px; padding: 16px; text-align: center; font-size: 12px; color: #94a3b8; }
-.comment-form { margin-bottom: 14px; }
-.comment-form textarea { width: 100%; border: 1px solid #e2e8f0; border-radius: 7px; padding: 10px 12px; font-size: 12px; font-family: inherit; color: #1e293b; resize: none; outline: none; line-height: 1.5; }
-.comment-form textarea:focus { border-color: #3b82f6; }
-.comment-submit { display: flex; justify-content: flex-end; margin-top: 8px; }
-.submit-btn { height: 32px; padding: 0 14px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
-.submit-btn:hover { background: #2563eb; }
-.submit-btn:disabled { background: #93c5fd; cursor: not-allowed; }
+.no-comments { text-align: center; padding: 16px; font-size: 12px; color: #94a3b8; background: #f8fafc; border-radius: 6px; }
 
 /* ── Lightbox ── */
 #lightbox { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.92); align-items: center; justify-content: center; padding: 20px; }
 #lightbox.open { display: flex; }
-#lb-inner { max-width: 920px; width: 100%; background: #111; border-radius: 10px; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.5); }
-#lb-header { display: flex; align-items: center; justify-content: space-between; padding: 11px 15px; border-bottom: 1px solid #1e1e1e; }
-#lb-filename { font-size: 12px; color: #e2e8f0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lb-btns { display: flex; gap: 7px; flex-shrink: 0; margin-left: 12px; }
-.lb-btn { font-size: 11px; color: #94a3b8; background: none; border: 1px solid #2a2a2a; border-radius: 5px; padding: 4px 10px; cursor: pointer; text-decoration: none; display: inline-block; font-family: inherit; }
-.lb-btn:hover { border-color: #444; color: #e2e8f0; }
-#lb-media { background: #000; min-height: 200px; max-height: 72vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+#lb-inner { max-width: 920px; width: 100%; background: #111; border-radius: 10px; overflow: hidden; }
+#lb-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #1e1e1e; }
+#lb-name { font-size: 12px; color: #e2e8f0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-btns { display: flex; gap: 6px; flex-shrink: 0; margin-left: 12px; }
+.lb-btn { font-size: 11px; color: #94a3b8; background: none; border: 1px solid #2a2a2a; border-radius: 5px; padding: 3px 9px; cursor: pointer; text-decoration: none; font-family: inherit; }
+.lb-btn:hover { color: #e2e8f0; border-color: #444; }
+#lb-media { background: #000; display: flex; align-items: center; justify-content: center; min-height: 200px; max-height: 72vh; overflow: hidden; }
 #lb-media img, #lb-media video { max-width: 100%; max-height: 72vh; object-fit: contain; display: block; }
 </style>
 </head>
 <body>
 
-<!-- ════════════════════════════════════
-     ★  PASTE YOUR DETAILS HERE  ★
-════════════════════════════════════ -->
+<!-- ════════════════════════════════
+     ★  YOUR DETAILS HERE  ★
+════════════════════════════════ -->
 <script>
 const CONFIG = {
-  apiToken: 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ1NjA4NTcwMSwiYWFpIjoxMSwidWlkIjo2OTYyOTM1MSwiaWFkIjoiMjAyNS0wMS0xMFQwNjoyMTozMi4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6NjQzMTgxMCwicmduIjoidXNlMSJ9.CaVqnG51LtzKP4MTxXCflpqaZA64n0TvS6DzmK-7R84',  // ← your monday.com API v2 token
-  boardId:  '18408062519',   // ← the number from your board URL
+  apiToken: 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ1NjA4NTcwMSwiYWFpIjoxMSwidWlkIjo2OTYyOTM1MSwiaWFkIjoiMjAyNS0wMS0xMFQwNjoyMTozMi4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6NjQzMTgxMCwicmduIjoidXNlMSJ9.CaVqnG51LtzKP4MTxXCflpqaZA64n0TvS6DzmK-7R84',  // ← monday.com API v2 token
+  boardId:  '18408062519',   // ← number from board URL
 };
 </script>
-<!-- ════════════════════════════════════ -->
+<!-- ════════════════════════════════ -->
 
+<!-- Loading -->
 <div id="loading-screen">
   <div class="spinner"></div>
-  <div class="logo">Content Calendar</div>
-  <div class="sub" id="loading-msg">Connecting…</div>
+  <div style="font-size:14px;font-weight:700;color:#0f172a">Content Calendar</div>
+  <div style="font-size:11px;color:#94a3b8" id="load-msg">Connecting…</div>
 </div>
 
+<!-- Error -->
 <div id="error-screen">
   <div style="font-size:28px">⚠️</div>
-  <div class="err-title" id="err-title">Could not load board</div>
+  <div class="err-title" id="err-title">Could not load</div>
   <div class="err-msg" id="err-msg"></div>
-  <div class="err-detail" id="err-detail" style="display:none"></div>
-  <button class="retry-btn" onclick="location.reload()">Try again</button>
+  <div class="err-code" id="err-code" style="display:none"></div>
+  <button class="retry-btn" onclick="location.reload()">Retry</button>
 </div>
 
+<!-- App -->
 <div id="app">
   <div id="header">
-    <div id="header-left">
+    <div>
       <h1>Content Calendar</h1>
       <p id="week-summary"></p>
     </div>
@@ -178,25 +210,43 @@ const CONFIG = {
       <div id="week-label"></div>
       <button class="nav-btn" id="btn-next">&#8250;</button>
       <button class="hbtn" id="btn-today">Today</button>
-      <button class="hbtn" id="btn-refresh">↻ Refresh</button>
+      <button class="hbtn" id="btn-refresh">↻</button>
     </div>
   </div>
-  <div id="calendar"></div>
+
+  <div id="cal-wrapper">
+    <!-- Day name header -->
+    <div id="cal-header">
+      <div class="cal-h-gutter"></div>
+      <!-- injected by JS -->
+    </div>
+
+    <!-- Scrollable time grid -->
+    <div id="cal-scroll">
+      <div id="cal-grid">
+        <div id="time-col"><!-- time labels injected --></div>
+        <div id="days-area"><!-- day cols injected --></div>
+        <div id="now-line" style="display:none"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
+<!-- Side panel -->
 <div id="panel-overlay"></div>
 <div id="detail-panel">
-  <div id="panel-header">
-    <div id="panel-title"></div>
-    <button id="panel-close">&#x2715;</button>
+  <div id="ph">
+    <div id="pt"></div>
+    <button id="pc">&#x2715;</button>
   </div>
-  <div id="panel-body"></div>
+  <div id="pb"></div>
 </div>
 
+<!-- Lightbox -->
 <div id="lightbox">
   <div id="lb-inner">
-    <div id="lb-header">
-      <span id="lb-filename"></span>
+    <div id="lb-head">
+      <span id="lb-name"></span>
       <div class="lb-btns">
         <a id="lb-open" href="#" target="_blank" rel="noopener noreferrer" class="lb-btn">Open ↗</a>
         <button class="lb-btn" id="lb-close">Close</button>
@@ -211,69 +261,103 @@ const CONFIG = {
 const $ = id => document.getElementById(id);
 
 // ─────────────────────────────────────────────────────────────────
-// Dropbox URL → direct embeddable URL
-// Handles both /s/ share links and newer /scl/fi/ links with rlkey
+// CALENDAR CONSTANTS
+// ─────────────────────────────────────────────────────────────────
+const HOUR_H    = 64;   // px per hour
+const START_H   = 6;    // 6am
+const END_H     = 23;   // 11pm
+const TOTAL_H   = (END_H - START_H) * HOUR_H;  // 1088px
+const DAYS      = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS    = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// ─────────────────────────────────────────────────────────────────
+// DROPBOX → DIRECT URL
+// Handles: /s/ links, /scl/fi/ links, with rlkey params
 // ─────────────────────────────────────────────────────────────────
 function toDirectUrl(url) {
   if (!url || typeof url !== 'string') return null;
   const u = url.trim();
+  if (!u) return null;
   if (!u.includes('dropbox.com')) return u;
+
   let out = u;
-  // Swap share domain for direct-content domain
   out = out.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
-  // Remove dl=0 or dl=1 while keeping other params like rlkey
-  out = out.replace(/([?&])dl=\d(&?)/, (_, pre, post) => post ? pre : '');
+  // Remove dl=0 or dl=1 but keep rlkey and other params
+  out = out.replace(/([?&])dl=\d(&|$)/, (_, pre, post) => post === '&' ? pre : '');
   out = out.replace(/[?&]$/, '');
   return out;
 }
 
 // ─────────────────────────────────────────────────────────────────
-// File type detection
+// FILE TYPE DETECTION
 // ─────────────────────────────────────────────────────────────────
 function getExt(asset) {
-  if (asset.extension) return asset.extension.toLowerCase().replace('.', '');
+  if (asset.extension) return asset.extension.toLowerCase().replace('.','');
+  // Strip query string before extracting extension
   const path = (asset.url || '').split('?')[0];
   return (path.split('.').pop() || '').toLowerCase();
 }
-const isImg = e => /^(jpg|jpeg|png|gif|webp|svg|bmp|tiff)$/.test(e);
-const isVid = e => /^(mp4|webm|mov|avi|mkv|m4v)$/.test(e);
+const isImg = e => /^(jpg|jpeg|png|gif|webp|svg|bmp|tiff|heic)$/.test(e);
+const isVid = e => /^(mp4|webm|mov|avi|mkv|m4v|wmv)$/.test(e);
+
+// Also detect from URL string directly (for Dropbox links where extension is in the path)
+function detectFromUrl(url) {
+  if (!url) return { isImg: false, isVid: false };
+  const path = url.split('?')[0].toLowerCase();
+  return {
+    isImg: /\.(jpg|jpeg|png|gif|webp|svg|bmp|tiff)$/.test(path),
+    isVid: /\.(mp4|webm|mov|avi|mkv|m4v|wmv)$/.test(path),
+  };
+}
 
 // ─────────────────────────────────────────────────────────────────
-// Normalise assets — handles every shape monday.com might return
+// NORMALISE ASSETS — handles every shape monday might return
 // ─────────────────────────────────────────────────────────────────
 function normaliseAssets(raw) {
   if (!raw) return [];
   const wrap = (x, i) => {
     if (!x) return null;
     if (typeof x === 'string') {
-      return { id:'s'+i, name: x.split('/').pop()?.split('?')[0]||'File', url:x, extension:(x.split('?')[0].split('.').pop()||'') };
+      if (!x.trim()) return null;
+      return { id:'s'+i, name:x.split('/').pop()?.split('?')[0]||'File', url:x.trim(), extension:(x.split('?')[0].split('.').pop()||'') };
     }
-    const url = x.url || x.publicUrl || x.public_url || x.link || x.shareUrl || x.linkUrl || '';
+    const url = [x.url, x.linkUrl, x.publicUrl, x.public_url, x.link, x.shareUrl]
+      .map(v => typeof v === 'string' ? v.trim() : '')
+      .find(v => v && v.startsWith('http'));
     if (!url) return null;
     return {
       id: x.id ? String(x.id) : 'a'+i,
       name: x.name || url.split('/').pop()?.split('?')[0] || 'File',
       url,
       extension: x.extension || x.file_extension || (url.split('?')[0].split('.').pop()||''),
-      downloadUrl: x.downloadUrl || x.public_url || '',
     };
   };
-  let items = Array.isArray(raw) ? raw : (typeof raw === 'string' ? [raw] : [raw]);
+  const items = Array.isArray(raw) ? raw : [raw];
   return items.map(wrap).filter(x => x && x.url);
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Status colours
+// STATUS COLOURS
 // ─────────────────────────────────────────────────────────────────
-const SC = {
-  'approved':'#22c55e','ready for client review':'#3b82f6','ready for review':'#3b82f6',
-  'amends required':'#f97316','changes requested':'#f97316','in production':'#a855f7',
-  'on hold':'#94a3b8','cancelled':'#ef4444','pending':'#94a3b8',
+const STATUS_MAP = {
+  'approved':                '#22c55e',
+  'ready for client review': '#3b82f6',
+  'ready for review':        '#3b82f6',
+  'amends required':         '#f97316',
+  'changes requested':       '#f97316',
+  'in production':           '#a855f7',
+  'on hold':                 '#94a3b8',
+  'cancelled':               '#ef4444',
+  'pending':                 '#94a3b8',
+  'concept pending':         '#f59e0b',
+  'concept approved':        '#22c55e',
 };
-const sc = s => SC[(s||'').toLowerCase()] || '#64748b';
+function statusColour(s) {
+  return STATUS_MAP[(s||'').toLowerCase()] || '#64748b';
+}
 
 // ─────────────────────────────────────────────────────────────────
-// Date helpers
+// DATE / TIME HELPERS
 // ─────────────────────────────────────────────────────────────────
 function getWeekStart(d) {
   const x = new Date(d || new Date());
@@ -282,27 +366,61 @@ function getWeekStart(d) {
   return x;
 }
 const sameDay = (a,b) => a.toDateString() === b.toDateString();
-const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function parseDateTime(val) {
+  // monday date column value: {"date":"2026-04-22","time":"09:00:00"}
+  if (!val) return { date: null, time: null, hour: null, min: null };
+  try {
+    const p = JSON.parse(val);
+    const date = p.date || null;
+    const time = p.time || null; // "09:00:00"
+    if (date) {
+      const d = new Date(date + 'T00:00:00');
+      let hour = null, min = null;
+      if (time) {
+        const parts = time.split(':');
+        hour = parseInt(parts[0]);
+        min  = parseInt(parts[1]);
+      }
+      return { date, time, hour, min, dateObj: d };
+    }
+  } catch {}
+  return { date: null, time: null, hour: null, min: null };
+}
+
+function formatTime(hour, min) {
+  if (hour === null) return '';
+  const h = hour % 12 || 12;
+  const m = String(min||0).padStart(2,'0');
+  return `${h}:${m} ${hour < 12 ? 'AM' : 'PM'}`;
+}
+
+function timeToY(hour, min) {
+  if (hour === null) return 0;
+  return Math.max(0, ((hour + (min||0)/60) - START_H) * HOUR_H);
+}
 
 // ─────────────────────────────────────────────────────────────────
-// Column map — cached in localStorage per board
+// COLUMN MAP CACHE
 // ─────────────────────────────────────────────────────────────────
-const COL_KEY = 'cc_cols_' + CONFIG.boardId;
-const saveColMap = m => localStorage.setItem(COL_KEY, JSON.stringify(m));
-const loadColMap = () => { try { return JSON.parse(localStorage.getItem(COL_KEY)); } catch { return null; } };
+const COL_KEY = 'cc_v3_' + (CONFIG.boardId||'x');
+const saveMap = m => localStorage.setItem(COL_KEY, JSON.stringify(m));
+const loadMap = () => { try { return JSON.parse(localStorage.getItem(COL_KEY)); } catch { return null; } };
 
 function autoMap(cols) {
-  const find = fn => (cols.find(fn) || {}).id || '';
+  const find = fn => { const c = cols.find(fn); return c ? c.id : ''; };
   return {
-    dateCol:    find(c => c.type === 'date'),
-    filesCol:   find(c => c.type === 'file' || /asset|file/i.test(c.title)),
-    conceptCol: find(c => /concept/i.test(c.title) && c.type === 'color'),
-    prodCol:    find(c => /product/i.test(c.title) && c.type === 'color'),
-    typeCol:    find(c => /type/i.test(c.title)),
-    netCol:     find(c => /network|platform/i.test(c.title)),
-    copyCol:    find(c => /copy|caption/i.test(c.title)),
-    statusCol:  find(c => c.type === 'color' && !/concept|product/i.test(c.title)),
+    dateCol:         find(c => c.type === 'date'),
+    filesCol:        find(c => c.type === 'file' || /final.asset|supporting.file|asset/i.test(c.title)),
+    conceptCol:      find(c => /concept.*status/i.test(c.title) || (c.type === 'color' && /concept/i.test(c.title))),
+    prodCol:         find(c => /production.*status/i.test(c.title) || (c.type === 'color' && /production/i.test(c.title))),
+    typeCol:         find(c => /content.?type|type/i.test(c.title) && c.type !== 'color'),
+    netCol:          find(c => /network|platform/i.test(c.title)),
+    copyCol:         find(c => /push.?copy|copy|caption/i.test(c.title) && c.type !== 'color'),
+    conceptExplCol:  find(c => /explanation|concept.*expl/i.test(c.title)),
+    conceptLinkCol:  find(c => /concept.*link/i.test(c.title) || (c.type === 'link' && /link/i.test(c.title))),
+    conceptEstCol:   find(c => /estimate/i.test(c.title)),
+    approvalCol:     find(c => /approval|approve/i.test(c.title) && c.type === 'color'),
   };
 }
 
@@ -312,14 +430,10 @@ function autoMap(cols) {
 async function api(query) {
   const r = await fetch('https://api.monday.com/v2', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': CONFIG.apiToken,
-      'API-Version': '2024-01',
-    },
+    headers: { 'Content-Type':'application/json', 'Authorization': CONFIG.apiToken, 'API-Version':'2024-01' },
     body: JSON.stringify({ query }),
   });
-  if (!r.ok) throw new Error('monday.com returned HTTP ' + r.status + '. Check your API token.');
+  if (!r.ok) throw new Error(`monday.com API: HTTP ${r.status}. Check your API token.`);
   const j = await r.json();
   if (j.errors?.length) throw new Error(j.errors[0].message);
   return j.data;
@@ -328,19 +442,20 @@ async function api(query) {
 async function fetchColumns() {
   const d = await api(`{ boards(ids:[${CONFIG.boardId}]) { columns { id title type } } }`);
   const cols = d?.boards?.[0]?.columns;
-  if (!cols?.length) throw new Error('Board not found or no columns returned. Check your board ID.');
+  if (!cols?.length) throw new Error('Board not found. Check your board ID.');
   return cols;
 }
 
 async function fetchItems(colMap) {
-  const ids = JSON.stringify(Object.values(colMap).filter(Boolean));
+  const colIds = [...new Set(Object.values(colMap).filter(Boolean))];
   const d = await api(`{
     boards(ids:[${CONFIG.boardId}]) {
       items_page(limit:500) {
         items {
           id name
+          group { id title color }
           assets { id name url public_url file_extension }
-          column_values(ids:${ids}) { id value text }
+          column_values(ids:${JSON.stringify(colIds)}) { id value text }
         }
       }
     }
@@ -349,16 +464,17 @@ async function fetchItems(colMap) {
 }
 
 async function fetchItemDetail(itemId, colMap) {
-  const ids = JSON.stringify(Object.values(colMap).filter(Boolean));
+  const colIds = [...new Set(Object.values(colMap).filter(Boolean))];
   const d = await api(`{
     items(ids:[${itemId}]) {
       id name
+      group { id title color }
       assets { id name url public_url file_extension }
       updates(limit:50) {
         id text_body created_at
         creator { id name }
       }
-      column_values(ids:${ids}) { id value text }
+      column_values(ids:${JSON.stringify(colIds)}) { id value text }
     }
   }`);
   return d?.items?.[0] || null;
@@ -368,21 +484,31 @@ async function postComment(itemId, text) {
   await api(`mutation { create_update(item_id: ${itemId}, body: ${JSON.stringify(text)}) { id } }`);
 }
 
-async function updateStatus(itemId, columnId, value) {
-  await api(`mutation { change_simple_column_value(item_id: ${itemId}, board_id: ${CONFIG.boardId}, column_id: "${columnId}", value: ${JSON.stringify(value)}) { id } }`);
+async function updateStatusColumn(itemId, columnId, value) {
+  await api(`mutation {
+    change_simple_column_value(
+      item_id: ${itemId},
+      board_id: ${CONFIG.boardId},
+      column_id: "${columnId}",
+      value: ${JSON.stringify(value)}
+    ) { id }
+  }`);
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Parse raw item
+// PARSE RAW ITEM
 // ─────────────────────────────────────────────────────────────────
 function parseItem(raw, colMap) {
   const out = {
     id: raw.id, name: raw.name,
+    groupTitle: raw.group?.title || '',
+    groupColor: raw.group?.color || '',
     assets: normaliseAssets(raw.assets),
-    scheduledDate: null,
+    scheduledDate: null, scheduledDateObj: null,
+    scheduledHour: null, scheduledMin: null, scheduledTimeStr: '',
     conceptStatus: '', productionStatus: '', approvalStatus: '',
-    contentType: [], network: [], pushCopy: '',
-    conceptExplanation: '', conceptLink: '',
+    contentType: [], network: [],
+    pushCopy: '', conceptExpl: '', conceptLink: '', conceptEst: '',
     updates: raw.updates || [],
   };
 
@@ -390,87 +516,135 @@ function parseItem(raw, colMap) {
     const val = col.value, text = (col.text || '').trim();
 
     if (col.id === colMap.dateCol && val) {
-      try { out.scheduledDate = JSON.parse(val).date || null; } catch {}
+      const parsed = parseDateTime(val);
+      out.scheduledDate    = parsed.date;
+      out.scheduledDateObj = parsed.dateObj;
+      out.scheduledHour    = parsed.hour;
+      out.scheduledMin     = parsed.min;
+      out.scheduledTimeStr = formatTime(parsed.hour, parsed.min);
     }
-    if (col.id === colMap.conceptCol) out.conceptStatus    = text;
-    if (col.id === colMap.prodCol)    out.productionStatus = text;
-    if (col.id === colMap.statusCol)  out.approvalStatus   = text;
-    if (col.id === colMap.copyCol)    out.pushCopy         = text;
+    if (col.id === colMap.conceptCol)   out.conceptStatus    = text;
+    if (col.id === colMap.prodCol)      out.productionStatus = text;
+    if (col.id === colMap.approvalCol)  out.approvalStatus   = text;
+    if (col.id === colMap.copyCol)      out.pushCopy         = text;
+    if (col.id === colMap.conceptExplCol) out.conceptExpl    = text;
+    if (col.id === colMap.conceptEstCol)  out.conceptEst     = text;
+
     if (col.id === colMap.typeCol && text) out.contentType = text.split(', ').filter(Boolean);
     if (col.id === colMap.netCol  && text) out.network     = text.split(', ').filter(Boolean);
 
-    // Files column — Dropbox links come through here
-    if (col.id === colMap.filesCol && val) {
-      try {
-        const p = JSON.parse(val);
-        console.log('[files col raw]', raw.name, p);
-        const files = (p.files || []).flatMap((f, i) => {
-          const url = f.url || f.linkUrl || f.link || '';
-          if (!url) return [];
-          return [{
-            id: f.assetId ? String(f.assetId) : 'f'+i,
-            name: f.name || url.split('/').pop()?.split('?')[0] || 'File',
-            url,
-            extension: (f.name || url.split('?')[0]).split('.').pop() || '',
-          }];
-        });
-        if (files.length) {
-          console.log('[files resolved]', raw.name, files);
-          out.assets = files;
+    if (col.id === colMap.conceptLinkCol && val) {
+      try { const p = JSON.parse(val); out.conceptLink = p.url || p.text || text; }
+      catch { out.conceptLink = text; }
+    }
+
+    // ── Files / Dropbox column ──────────────────────────────────
+    // Log everything so we can see exactly what comes back
+    if (col.id === colMap.filesCol) {
+      console.log(`[FILES RAW] "${raw.name}"`, { value: val, text });
+      if (val) {
+        try {
+          const p = JSON.parse(val);
+          console.log(`[FILES PARSED]`, p);
+          const files = (p.files || []).flatMap((f, i) => {
+            console.log(`[FILE ENTRY ${i}]`, f);
+            // Try every possible URL property
+            const url = [f.url, f.linkUrl, f.link, f.publicUrl, f.public_url]
+              .map(v => typeof v === 'string' ? v.trim() : '')
+              .find(v => v && v.startsWith('http'));
+            if (!url) {
+              console.warn(`[FILE ENTRY ${i}] No URL found in:`, f);
+              return [];
+            }
+            return [{
+              id: f.assetId ? String(f.assetId) : 'f'+i,
+              name: f.name || url.split('/').pop()?.split('?')[0] || 'File',
+              url,
+              extension: (f.name || url.split('?')[0]).split('.').pop() || '',
+            }];
+          });
+
+          if (files.length) {
+            console.log(`[FILES RESOLVED] "${raw.name}"`, files);
+            out.assets = files;
+          } else {
+            console.warn(`[FILES] No valid URLs found for "${raw.name}"`);
+          }
+        } catch(e) {
+          console.warn(`[FILES PARSE ERROR] "${raw.name}"`, e, val);
         }
-      } catch(e) { console.warn('[files parse error]', e); }
+      }
     }
   });
 
-  // Fall back to item-level assets if files column gave nothing
+  // If still no assets from files column, check ALL columns for anything file-like
+  // (catches mis-mapped column IDs)
+  if (!out.assets.length) {
+    for (const col of (raw.column_values || [])) {
+      if (!col.value || col.id === colMap.filesCol) continue;
+      try {
+        const p = JSON.parse(col.value);
+        if (p.files && Array.isArray(p.files) && p.files.length) {
+          const files = p.files.flatMap((f, i) => {
+            const url = [f.url, f.linkUrl, f.link, f.publicUrl]
+              .map(v => typeof v === 'string' ? v.trim() : '')
+              .find(v => v && v.startsWith('http'));
+            if (!url) return [];
+            return [{ id:'x'+i, name: f.name || 'File', url, extension:(f.name||'').split('.').pop()||'' }];
+          });
+          if (files.length) {
+            console.log(`[FILES FALLBACK] Found in column "${col.id}" for "${raw.name}"`, files);
+            out.assets = files;
+            break;
+          }
+        }
+      } catch {}
+    }
+  }
+
+  // Last resort: item-level assets
   if (!out.assets.length && raw.assets?.length) {
     out.assets = normaliseAssets(raw.assets);
+    console.log(`[FILES ITEM-LEVEL] Using item assets for "${raw.name}"`, out.assets);
   }
 
   return out;
 }
 
 // ─────────────────────────────────────────────────────────────────
-// App state
+// APP STATE
 // ─────────────────────────────────────────────────────────────────
 let allItems = [], weekStart = getWeekStart(), colMap = null;
 
 // ─────────────────────────────────────────────────────────────────
-// Boot
+// BOOT
 // ─────────────────────────────────────────────────────────────────
 async function boot() {
   if (!CONFIG.apiToken || CONFIG.apiToken === 'YOUR_API_TOKEN_HERE') {
-    return showError('API token not set', 'Open this file and paste your token into the CONFIG block at the top.');
+    return showError('API token not set', 'Open this file and paste your monday.com API token into the CONFIG block at the top.');
   }
   if (!CONFIG.boardId || CONFIG.boardId === 'YOUR_BOARD_ID_HERE') {
     return showError('Board ID not set', 'Open this file and paste your board ID into the CONFIG block at the top.');
   }
-
   try {
-    setMsg('Loading board columns…');
+    setLoadMsg('Loading board columns…');
     const cols = await fetchColumns();
-
-    colMap = loadColMap();
-    if (!colMap) {
-      colMap = autoMap(cols);
-      saveColMap(colMap);
-    }
+    colMap = loadMap() || autoMap(cols);
+    saveMap(colMap);
     console.log('[colMap]', colMap);
 
-    setMsg('Loading content…');
+    setLoadMsg('Loading posts…');
     const raw = await fetchItems(colMap);
-    console.log('[raw items]', raw);
-
     allItems = raw.map(r => parseItem(r, colMap)).filter(i => i.scheduledDate);
-    console.log('[parsed items]', allItems);
+    console.log('[items]', allItems.length, allItems);
 
     $('loading-screen').style.display = 'none';
     $('app').style.display = 'flex';
     renderCalendar();
-
+    scrollToNow();
   } catch(e) {
     console.error(e);
-    showError('Could not load board', e.message);
+    showError('Failed to load', e.message);
   }
 }
 
@@ -480,135 +654,227 @@ function showError(title, msg) {
   $('err-title').textContent = title;
   $('err-msg').textContent = msg;
 }
-
-function setMsg(t) { $('loading-msg').textContent = t; }
+function setLoadMsg(t) { $('load-msg').textContent = t; }
 
 // ─────────────────────────────────────────────────────────────────
-// Render calendar
+// RENDER CALENDAR
 // ─────────────────────────────────────────────────────────────────
 function renderCalendar() {
-  const cal = $('calendar');
-  cal.innerHTML = '';
+  // Build week days array
+  const today = new Date();
+  const days = Array.from({length:7}, (_,i) => {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    return d;
+  });
 
-  const we = new Date(weekStart);
-  we.setDate(weekStart.getDate() + 6);
+  // Week label
+  const we = days[6];
   const sm = weekStart.getMonth() === we.getMonth();
   $('week-label').textContent = sm
     ? `${weekStart.getDate()} ${MONTHS[weekStart.getMonth()]} – ${we.getDate()}, ${we.getFullYear()}`
     : `${weekStart.getDate()} ${MONTHS[weekStart.getMonth()]} – ${we.getDate()} ${MONTHS[we.getMonth()]} ${we.getFullYear()}`;
 
-  const today = new Date();
+  // Day headers
+  const hdr = $('cal-header');
+  // Remove all but the gutter
+  while (hdr.children.length > 1) hdr.removeChild(hdr.lastChild);
   let total = 0;
-
-  for (let i = 0; i < 7; i++) {
-    const day = new Date(weekStart);
-    day.setDate(weekStart.getDate() + i);
+  days.forEach(day => {
+    const cnt = allItems.filter(x => x.scheduledDateObj && sameDay(x.scheduledDateObj, day)).length;
+    total += cnt;
     const isTd = sameDay(day, today);
-    const di = allItems.filter(x => sameDay(new Date(x.scheduledDate), day));
-    total += di.length;
-
-    const col = document.createElement('div');
-    col.className = 'day-col' + (isTd ? ' today' : '');
-    col.innerHTML = `
-      <div class="day-header">
-        <div class="day-name">${DAYS[day.getDay()]}</div>
-        <div class="day-num">${day.getDate()}</div>
-        <div class="day-month">${MONTHS[day.getMonth()]}</div>
-        ${di.length ? `<div class="day-count">${di.length} post${di.length!==1?'s':''}</div>` : ''}
-      </div>
-      <div class="day-posts"></div>
+    const div = document.createElement('div');
+    div.className = 'cal-h-day' + (isTd ? ' today' : '');
+    div.innerHTML = `
+      <div class="cal-h-dayname">${DAYS[day.getDay()]}</div>
+      <div class="cal-h-daynum">${day.getDate()}</div>
+      ${cnt ? `<div class="day-count">${cnt} post${cnt!==1?'s':''}</div>` : ''}
     `;
-    cal.appendChild(col);
-
-    const posts = col.querySelector('.day-posts');
-    if (!di.length) {
-      posts.innerHTML = '<div class="empty-day">·</div>';
-    } else {
-      di.forEach(item => posts.appendChild(buildCard(item)));
-    }
-  }
+    hdr.appendChild(div);
+  });
 
   $('week-summary').textContent = `${total} ${total===1?'post':'posts'} this week`;
+
+  // Build time col
+  const timeCol = $('time-col');
+  timeCol.innerHTML = '';
+  timeCol.style.position = 'relative';
+  timeCol.style.minHeight = TOTAL_H + 'px';
+  for (let h = START_H; h <= END_H; h++) {
+    const lbl = document.createElement('div');
+    lbl.className = 'time-label';
+    lbl.style.top = ((h - START_H) * HOUR_H) + 'px';
+    const ampm = h < 12 ? 'AM' : 'PM';
+    const h12  = h % 12 || 12;
+    lbl.textContent = `${h12} ${ampm}`;
+    timeCol.appendChild(lbl);
+  }
+
+  // Build day columns
+  const daysArea = $('days-area');
+  daysArea.innerHTML = '';
+  daysArea.style.minHeight = TOTAL_H + 'px';
+
+  days.forEach(day => {
+    const isTd = sameDay(day, today);
+    const dc = document.createElement('div');
+    dc.className = 'day-col' + (isTd ? ' today' : '');
+    dc.style.minHeight = TOTAL_H + 'px';
+
+    const dayItems = allItems.filter(x => x.scheduledDateObj && sameDay(x.scheduledDateObj, day));
+    dayItems.forEach(item => dc.appendChild(buildCalEvent(item)));
+    daysArea.appendChild(dc);
+  });
+
+  // Current time line
+  const nowLine = $('now-line');
+  if (days.some(d => sameDay(d, today))) {
+    const now = new Date();
+    const y = timeToY(now.getHours(), now.getMinutes());
+    if (y >= 0 && y <= TOTAL_H) {
+      nowLine.style.display = 'block';
+      nowLine.style.top = y + 'px';
+      nowLine.style.left = '58px'; // offset past time gutter
+    }
+  } else {
+    nowLine.style.display = 'none';
+  }
+}
+
+function scrollToNow() {
+  const now = new Date();
+  const y = timeToY(now.getHours(), now.getMinutes());
+  const scroll = $('cal-scroll');
+  const scrollTo = Math.max(0, y - scroll.clientHeight / 3);
+  setTimeout(() => scroll.scrollTop = scrollTo, 100);
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Build calendar card
+// BUILD CALENDAR EVENT BLOCK
 // ─────────────────────────────────────────────────────────────────
-function buildCard(item) {
-  const status = item.productionStatus || item.conceptStatus || item.approvalStatus || 'Pending';
-  const colour = sc(status);
+function buildCalEvent(item) {
+  const status = item.productionStatus || item.conceptStatus || item.approvalStatus || item.groupTitle || 'Pending';
+  const colour = statusColour(status);
   const primary = item.assets[0] || null;
+  const ext = primary ? getExt(primary) : '';
+  const { isImg: imgFromUrl, isVid: vidFromUrl } = primary ? detectFromUrl(primary.url) : {};
 
-  const card = document.createElement('div');
-  card.className = 'item-card';
-  card.addEventListener('click', () => openPanel(item.id));
+  const y = item.scheduledHour !== null
+    ? timeToY(item.scheduledHour, item.scheduledMin)
+    : 0;
+
+  const ev = document.createElement('div');
+  ev.className = 'cal-event';
+  ev.style.top = y + 'px';
+  ev.addEventListener('click', () => openPanel(item.id));
 
   // Colour bar
   const bar = document.createElement('div');
-  bar.className = 'card-bar';
+  bar.className = 'cal-event-bar';
   bar.style.background = colour;
-  card.appendChild(bar);
+  ev.appendChild(bar);
 
   // Thumbnail
-  const thumb = document.createElement('div');
-  thumb.className = 'card-thumb';
-
   if (primary) {
-    const ext = getExt(primary);
-    const direct = toDirectUrl(primary.url);   // ← Dropbox fix applied here
-
-    if (isImg(ext) && direct) {
-      const img = document.createElement('img');
-      img.src = direct;
-      img.alt = primary.name;
-      img.onerror = () => img.style.display = 'none';
-      thumb.appendChild(img);
-
-    } else if (isVid(ext) && direct) {
-      const vid = document.createElement('video');
-      vid.src = direct;
-      vid.muted = true; vid.playsInline = true; vid.preload = 'metadata';
-      thumb.appendChild(vid);
-
-    } else {
-      thumb.innerHTML = fileSVG(22, '#cbd5e1');
-    }
-
-    if (item.assets.length > 1) {
-      const b = document.createElement('div');
-      b.className = 'count-badge';
-      b.textContent = '+' + (item.assets.length - 1);
-      thumb.appendChild(b);
-    }
-  } else {
-    thumb.innerHTML = imgSVG(22, '#cbd5e1');
+    const tWrap = document.createElement('div');
+    tWrap.className = 'cal-event-thumb';
+    renderMedia(primary, tWrap, false);
+    ev.appendChild(tWrap);
   }
-  card.appendChild(thumb);
 
-  // Text meta
-  const ss = status.length > 15 ? status.slice(0,14)+'…' : status;
-  const meta = document.createElement('div');
-  meta.className = 'card-meta';
-  meta.innerHTML = `
-    <div class="card-title">${esc(item.name)}</div>
-    <div class="card-footer">
-      <span class="card-pill" style="background:${colour}1a;color:${colour}">${esc(ss)}</span>
-      ${item.network?.[0] ? `<span class="card-net">${esc(item.network[0])}</span>` : ''}
-    </div>
-  `;
-  card.appendChild(meta);
-  return card;
+  // Text body
+  const body = document.createElement('div');
+  body.className = 'cal-event-body';
+
+  // Time + type row
+  const timeType = document.createElement('div');
+  timeType.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:4px;';
+  if (item.scheduledTimeStr) {
+    const t = document.createElement('div');
+    t.className = 'cal-event-time';
+    t.textContent = item.scheduledTimeStr;
+    timeType.appendChild(t);
+  }
+  if (item.contentType?.[0]) {
+    const tp = document.createElement('div');
+    tp.className = 'cal-event-type';
+    tp.textContent = item.contentType[0];
+    timeType.appendChild(tp);
+  }
+  if (timeType.children.length) body.appendChild(timeType);
+
+  // Title
+  const title = document.createElement('div');
+  title.className = 'cal-event-title';
+  title.textContent = item.name;
+  body.appendChild(title);
+
+  // Status pill
+  const pill = document.createElement('div');
+  pill.className = 'cal-event-status';
+  pill.style.cssText = `background:${colour}1a;color:${colour};`;
+  pill.textContent = status;
+  body.appendChild(pill);
+
+  // Networks
+  if (item.network?.length) {
+    const nets = document.createElement('div');
+    nets.className = 'cal-event-nets';
+    item.network.slice(0,3).forEach(n => {
+      const t = document.createElement('span');
+      t.className = 'cal-event-net';
+      t.textContent = n;
+      nets.appendChild(t);
+    });
+    body.appendChild(nets);
+  }
+
+  ev.appendChild(body);
+  return ev;
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Detail panel
+// RENDER MEDIA (shared by card, panel, lightbox)
 // ─────────────────────────────────────────────────────────────────
-let currentItemId = null;
+function renderMedia(asset, container, fullSize) {
+  const ext = getExt(asset);
+  const direct = toDirectUrl(asset.url);
+  const fromUrl = detectFromUrl(asset.url);
+  const img = isImg(ext) || fromUrl.isImg;
+  const vid = isVid(ext) || fromUrl.isVid;
 
+  console.log(`[renderMedia] "${asset.name}" ext:${ext} img:${img} vid:${vid} direct:${direct}`);
+
+  if (img && direct) {
+    const el = document.createElement('img');
+    el.src = direct;
+    el.alt = asset.name;
+    el.onerror = () => { console.warn('[renderMedia] img load failed:', direct); el.style.display='none'; };
+    container.appendChild(el);
+  } else if (vid && direct) {
+    const el = document.createElement('video');
+    el.src = direct;
+    el.muted = true; el.playsInline = true; el.preload = 'metadata';
+    if (fullSize) { el.controls = true; el.autoplay = true; el.muted = false; }
+    container.appendChild(el);
+  } else {
+    // Fallback file icon
+    container.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;height:100%;padding:12px;">
+        ${fileSVG(fullSize?40:24, '#94a3b8')}
+        <span style="font-size:${fullSize?'12px':'9px'};color:#94a3b8;text-transform:uppercase;letter-spacing:.5px">${esc(ext||'file')}</span>
+        ${fullSize ? `<a href="${esc(asset.url)}" target="_blank" rel="noopener noreferrer" style="font-size:11px;color:#3b82f6;text-decoration:none;margin-top:4px">Open file ↗</a>` : ''}
+      </div>`;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// DETAIL PANEL
+// ─────────────────────────────────────────────────────────────────
 async function openPanel(itemId) {
-  currentItemId = itemId;
-  $('panel-title').textContent = '…';
-  $('panel-body').innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:12px"><div class="spinner" style="margin:0 auto 10px"></div>Loading…</div>';
+  $('pt').textContent = '…';
+  $('pb').innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:30px;"><div class="spinner"></div><span style="font-size:11px;color:#94a3b8;">Loading…</span></div>`;
   $('panel-overlay').style.display = 'block';
   $('detail-panel').classList.add('open');
 
@@ -618,243 +884,210 @@ async function openPanel(itemId) {
     const item = parseItem(raw, colMap);
     renderPanel(item);
   } catch(e) {
-    $('panel-body').innerHTML = `<div style="padding:20px;color:#ef4444;font-size:12px">${esc(e.message)}</div>`;
+    console.error(e);
+    $('pb').innerHTML = `<p style="color:#ef4444;padding:16px;font-size:12px;">${esc(e.message)}</p>`;
   }
 }
 
 function closePanel() {
   $('panel-overlay').style.display = 'none';
   $('detail-panel').classList.remove('open');
-  currentItemId = null;
 }
 
 function renderPanel(item) {
-  $('panel-title').textContent = item.name;
-  const body = $('panel-body');
-  body.innerHTML = '';
+  $('pt').textContent = item.name;
+  const pb = $('pb');
+  pb.innerHTML = '';
 
-  const cs = item.conceptStatus || '';
-  const ps = item.productionStatus || '';
-  const as = item.approvalStatus || '';
+  // ── Full asset preview ─────────────────────────────────────────
+  if (item.assets.length) {
+    const primary = item.assets[0];
+    const ext = getExt(primary);
+    const fromUrl = detectFromUrl(primary.url);
+    const vid = isVid(ext) || fromUrl.isVid;
 
-  // Status badges
-  const statuses = [cs, ps, as].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);
-  if (statuses.length) {
-    const bd = el('div','p-badges');
-    statuses.forEach(s => {
-      const c = sc(s), b = el('span','p-badge');
-      b.style.cssText = `background:${c}1a;color:${c};border:1px solid ${c}33`;
-      b.textContent = s;
-      bd.appendChild(b);
-    });
-    body.appendChild(bd);
+    const wrap = el('div', 'p-asset-wrap');
+    renderMedia(primary, wrap, true);
+
+    // If multiple assets, add navigation or list below
+    if (item.assets.length > 1) {
+      const lbl = el('div', 'p-sec-l');
+      lbl.textContent = `Assets (${item.assets.length})`;
+      pb.appendChild(lbl);
+      const grid = el('div');
+      grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;';
+      item.assets.forEach(a => {
+        const ac = el('div');
+        ac.style.cssText = 'border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;cursor:pointer;';
+        ac.addEventListener('click', () => openLightbox(a));
+        ac.addEventListener('mouseenter', () => ac.style.borderColor='#3b82f6');
+        ac.addEventListener('mouseleave', () => ac.style.borderColor='#e2e8f0');
+        const tw = el('div');
+        tw.style.cssText = 'aspect-ratio:16/9;background:#f1f5f9;overflow:hidden;display:flex;align-items:center;justify-content:center;';
+        renderMedia(a, tw, false);
+        const inf = el('div');
+        inf.style.cssText = 'padding:5px 8px;';
+        inf.innerHTML = `<div style="font-size:10px;font-weight:500;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(a.name)}</div>`;
+        ac.appendChild(tw); ac.appendChild(inf);
+        grid.appendChild(ac);
+      });
+      pb.appendChild(wrap);
+      pb.appendChild(grid);
+    } else {
+      pb.appendChild(wrap);
+    }
+  } else {
+    const ph = el('div', 'p-asset-wrap');
+    ph.innerHTML = `<div class="p-asset-placeholder">${fileSVG(36,'#cbd5e1')}<p>No assets found for this item</p></div>`;
+    pb.appendChild(ph);
   }
 
-  // Status selects (concept + production)
-  if (cs || ps) {
-    const row = el('div','status-row');
-
+  // ── Status dropdowns ───────────────────────────────────────────
+  if (colMap.conceptCol || colMap.prodCol) {
+    const row = el('div', 'p-row2');
     if (colMap.conceptCol) {
-      const sf = el('div','status-field');
-      sf.innerHTML = `<label>Concept Status</label>`;
-      const sel = buildStatusSelect(['Pending','Ready For Client Review','Approved','Amends Required','On Hold','Cancelled'], cs);
-      sel.addEventListener('change', async () => {
-        try { await updateStatus(item.id, colMap.conceptCol, sel.value); }
-        catch(e) { console.error(e); }
-      });
-      sf.appendChild(sel);
-      row.appendChild(sf);
+      row.appendChild(statusField('Concept Status',
+        ['Pending','Ready For Client Review','Approved','Amends Required','On Hold','Cancelled'],
+        item.conceptStatus,
+        async val => { try { await updateStatusColumn(item.id, colMap.conceptCol, val); } catch(e) { console.error(e); } }
+      ));
     }
-
     if (colMap.prodCol) {
-      const sf = el('div','status-field');
-      sf.innerHTML = `<label>Production Status</label>`;
-      const sel = buildStatusSelect(['Pending','Ready for Client Review','Approved','Amends Required','In Production','On Hold'], ps);
-      sel.addEventListener('change', async () => {
-        try { await updateStatus(item.id, colMap.prodCol, sel.value); }
-        catch(e) { console.error(e); }
-      });
-      sf.appendChild(sel);
-      row.appendChild(sf);
+      row.appendChild(statusField('Production Status',
+        ['Pending','Ready for Client Review','Approved','Amends Required','In Production','On Hold'],
+        item.productionStatus,
+        async val => { try { await updateStatusColumn(item.id, colMap.prodCol, val); } catch(e) { console.error(e); } }
+      ));
     }
-
-    body.appendChild(row);
+    pb.appendChild(row);
   }
 
-  // Meta grid
-  const mg = el('div','p-meta-grid');
+  // ── Metadata ───────────────────────────────────────────────────
+  const meta = el('div', 'p-meta');
+
   if (item.scheduledDate) {
-    const d = new Date(item.scheduledDate);
-    mg.appendChild(pmi('Scheduled', d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})));
+    const d = new Date(item.scheduledDate + 'T00:00:00');
+    let dateStr = d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+    if (item.scheduledTimeStr) dateStr += ' at ' + item.scheduledTimeStr;
+    meta.appendChild(pmi('Scheduled', dateStr, true));
   }
-  if (item.contentType?.[0]) mg.appendChild(pmi('Type', item.contentType[0]));
+  if (item.groupTitle) meta.appendChild(pmi('Stage', item.groupTitle));
+  if (item.contentType?.[0]) meta.appendChild(pmi('Type', item.contentType[0]));
   if (item.network?.length) {
-    const m = pmi('Networks',''); m.classList.add('full');
+    const m = pmi('Networks','');
+    m.classList.add('full');
     const nt = el('div','net-tags');
     item.network.forEach(n => { const t=el('span','net-tag'); t.textContent=n; nt.appendChild(t); });
-    m.querySelector('.p-mi-value').appendChild(nt);
-    mg.appendChild(m);
+    m.querySelector('.p-mi-v').appendChild(nt);
+    meta.appendChild(m);
   }
-  if (mg.children.length) body.appendChild(mg);
+  if (meta.children.length) pb.appendChild(meta);
 
-  body.appendChild(divider());
-
-  // Concept explanation
-  if (item.conceptExplanation) {
-    const lbl = el('div','p-section-label'); lbl.textContent='Concept'; body.appendChild(lbl);
-    const tb = el('div','p-text-block'); tb.textContent = item.conceptExplanation; body.appendChild(tb);
+  // ── Concept Explanation ────────────────────────────────────────
+  if (item.conceptExpl) {
+    pb.appendChild(div_());
+    const lbl = el('div','p-sec-l'); lbl.textContent='Concept Explanation'; pb.appendChild(lbl);
+    const tb = el('div','p-textbox'); tb.textContent = item.conceptExpl; pb.appendChild(tb);
   }
 
-  // Concept link
+  // ── Concept Link ───────────────────────────────────────────────
   if (item.conceptLink) {
-    const lbl = el('div','p-section-label'); lbl.textContent='Concept Link'; body.appendChild(lbl);
+    if (!item.conceptExpl) pb.appendChild(div_());
+    const lbl = el('div','p-sec-l'); lbl.textContent='Concept Link'; pb.appendChild(lbl);
     const a = document.createElement('a');
-    a.className = 'p-link'; a.href = item.conceptLink;
-    a.target = '_blank'; a.rel = 'noopener noreferrer';
-    a.textContent = item.conceptLink;
-    body.appendChild(a);
-    body.appendChild(divider());
+    a.className='p-link'; a.href=item.conceptLink; a.target='_blank'; a.rel='noopener noreferrer';
+    a.textContent=item.conceptLink; pb.appendChild(a);
   }
 
-  // Assets
-  const al = el('div','p-section-label');
-  al.textContent = `Assets (${item.assets.length})`;
-  body.appendChild(al);
-
-  if (item.assets.length) {
-    const ag = el('div','asset-grid');
-    item.assets.forEach(a => ag.appendChild(buildAssetCard(a)));
-    body.appendChild(ag);
-  } else {
-    const na = el('div','no-assets');
-    na.textContent = 'No assets attached';
-    body.appendChild(na);
+  // ── Concept Estimate ──────────────────────────────────────────
+  if (item.conceptEst) {
+    pb.appendChild(div_());
+    const lbl = el('div','p-sec-l'); lbl.textContent='Concept Estimate'; pb.appendChild(lbl);
+    const tb = el('div','p-textbox'); tb.textContent = item.conceptEst; pb.appendChild(tb);
   }
 
-  // Copy
+  // ── Push Copy ─────────────────────────────────────────────────
   if (item.pushCopy) {
-    body.appendChild(divider());
-    const cl = el('div','p-section-label'); cl.textContent='Copy'; body.appendChild(cl);
-    const cb = el('div','p-text-block'); cb.textContent = item.pushCopy; body.appendChild(cb);
+    pb.appendChild(div_());
+    const lbl = el('div','p-sec-l'); lbl.textContent='Push Copy'; pb.appendChild(lbl);
+    const tb = el('div','p-textbox'); tb.textContent = item.pushCopy; pb.appendChild(tb);
   }
 
-  body.appendChild(divider());
+  // ── Comments ──────────────────────────────────────────────────
+  pb.appendChild(div_());
+  const cl = el('div','p-sec-l'); cl.textContent = `Comments (${item.updates.length})`; pb.appendChild(cl);
 
-  // Comments
-  const coml = el('div','p-section-label');
-  coml.textContent = `Comments (${item.updates.length})`;
-  body.appendChild(coml);
-
-  // Comment input
-  const cf = el('div','comment-form');
+  // New comment box
+  const cf = el('div','comment-form-wrap');
   const ta = document.createElement('textarea');
   ta.rows = 3; ta.placeholder = 'Add a comment…';
   cf.appendChild(ta);
-  const cs2 = el('div','comment-submit');
+  const ca = el('div','comment-actions');
   const sb = document.createElement('button');
-  sb.className = 'submit-btn'; sb.textContent = 'Post Comment';
+  sb.className = 'post-btn'; sb.textContent = 'Post Comment';
   sb.addEventListener('click', async () => {
     const txt = ta.value.trim();
     if (!txt) return;
     sb.disabled = true; sb.textContent = 'Posting…';
     try {
       await postComment(item.id, txt);
-      ta.value = '';
-      // Reload panel to show new comment
-      await openPanel(item.id);
+      await openPanel(item.id); // reload panel
     } catch(e) {
       console.error(e);
-      sb.disabled = false; sb.textContent = 'Post Comment';
+      sb.disabled=false; sb.textContent='Post Comment';
     }
   });
-  cs2.appendChild(sb);
-  cf.appendChild(cs2);
-  body.appendChild(cf);
+  ca.appendChild(sb); cf.appendChild(ca); pb.appendChild(cf);
 
+  // Existing comments
   if (item.updates.length) {
     item.updates.forEach(u => {
       const ci = el('div','comment-item');
-      const d = new Date(u.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
+      const d = new Date(u.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
       ci.innerHTML = `
-        <div class="comment-header">
+        <div class="comment-head">
           <span class="comment-author">${esc(u.creator?.name||'Unknown')}</span>
           <span class="comment-date">${esc(d)}</span>
         </div>
-        <div class="comment-body">${esc(u.text_body||'')}</div>
-      `;
-      body.appendChild(ci);
+        <div class="comment-body">${esc(u.text_body||'')}</div>`;
+      pb.appendChild(ci);
     });
   } else {
-    const nc = el('div','no-comments'); nc.textContent='No comments yet'; body.appendChild(nc);
+    const nc = el('div','no-comments'); nc.textContent='No comments yet'; pb.appendChild(nc);
   }
 }
 
-// ─────────────────────────────────────────────────────────────────
-// Asset card in panel
-// ─────────────────────────────────────────────────────────────────
-function buildAssetCard(asset) {
-  const ext = getExt(asset);
-  const direct = toDirectUrl(asset.url);   // ← Dropbox fix applied here
-
-  const card = el('div','asset-card');
-  card.addEventListener('click', () => openLightbox(asset));
-
-  const wrap = el('div','asset-thumb');
-
-  if (isImg(ext) && direct) {
-    const img = document.createElement('img');
-    img.src = direct; img.alt = asset.name;
-    img.onerror = () => img.style.display = 'none';
-    wrap.appendChild(img);
-
-  } else if (isVid(ext) && direct) {
-    const vid = document.createElement('video');
-    vid.src = direct; vid.muted=true; vid.playsInline=true; vid.preload='metadata';
-    wrap.appendChild(vid);
-
-  } else {
-    wrap.innerHTML = fileSVG(28, '#cbd5e1');
-  }
-
-  card.appendChild(wrap);
-  const info = el('div','asset-info');
-  info.innerHTML = `<div class="asset-name">${esc(asset.name)}</div><div class="asset-ext">${esc(ext||'file')}</div>`;
-  card.appendChild(info);
-  return card;
+// ── Panel helpers ──────────────────────────────────────────────
+function statusField(label, options, current, onChange) {
+  const sf = el('div','p-field');
+  const lbl = document.createElement('label'); lbl.textContent=label; sf.appendChild(lbl);
+  const sel = document.createElement('select');
+  options.forEach(o => { const opt=new Option(o,o); sel.appendChild(opt); });
+  sel.value = current || '';
+  sel.addEventListener('change', () => onChange(sel.value));
+  sf.appendChild(sel);
+  return sf;
 }
 
+function pmi(label, value, full) {
+  const e = el('div','p-mi');
+  if (full) e.classList.add('full');
+  e.innerHTML = `<div class="p-mi-l">${esc(label)}</div><div class="p-mi-v">${esc(String(value||''))}</div>`;
+  return e;
+}
+function div_() { return el('div','p-div'); }
+
 // ─────────────────────────────────────────────────────────────────
-// Lightbox
+// LIGHTBOX
 // ─────────────────────────────────────────────────────────────────
 function openLightbox(asset) {
-  const ext = getExt(asset);
-  const direct = toDirectUrl(asset.url);   // ← Dropbox fix applied here
-
-  $('lb-filename').textContent = asset.name;
+  $('lb-name').textContent = asset.name;
   $('lb-open').href = asset.url;
   const media = $('lb-media');
   media.innerHTML = '';
-
-  if (isImg(ext) && direct) {
-    const img = document.createElement('img');
-    img.src = direct; img.alt = asset.name;
-    media.appendChild(img);
-
-  } else if (isVid(ext) && direct) {
-    const vid = document.createElement('video');
-    vid.src = direct; vid.controls=true; vid.autoplay=true;
-    media.appendChild(vid);
-
-  } else {
-    media.innerHTML = `<div style="padding:40px;text-align:center;color:#64748b">
-      ${fileSVG(40,'#64748b')}
-      <p style="margin-top:12px;font-size:13px">No preview — <a href="${esc(asset.url)}" target="_blank" style="color:#3b82f6">open file ↗</a></p>
-    </div>`;
-  }
-
+  renderMedia(asset, media, true);
   $('lightbox').classList.add('open');
 }
-
 function closeLightbox() {
   const v = document.querySelector('#lb-media video');
   if (v) { v.pause(); v.src=''; }
@@ -862,36 +1095,36 @@ function closeLightbox() {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Small DOM helpers
+// DOM HELPERS
 // ─────────────────────────────────────────────────────────────────
-function el(tag, cls) { const e=document.createElement(tag); if(cls)e.className=cls; return e; }
-function divider() { return el('div','p-divider'); }
-function pmi(label, value) {
-  const e = el('div','p-mi');
-  e.innerHTML = `<div class="p-mi-label">${esc(label)}</div><div class="p-mi-value">${esc(String(value))}</div>`;
-  return e;
-}
-function buildStatusSelect(options, current) {
-  const sel = document.createElement('select');
-  options.forEach(o => { const opt=new Option(o,o); sel.appendChild(opt); });
-  sel.value = current || '';
-  return sel;
-}
+function el(tag, cls) { const e=document.createElement(tag); if(cls) e.className=cls; return e; }
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-function fileSVG(s,c) { return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`; }
-function imgSVG(s,c) { return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`; }
+function fileSVG(s,c) {
+  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+}
 
 // ─────────────────────────────────────────────────────────────────
-// Events
+// NAVIGATION EVENTS
 // ─────────────────────────────────────────────────────────────────
-$('btn-prev').addEventListener('click',    () => { weekStart.setDate(weekStart.getDate()-7); renderCalendar(); });
-$('btn-next').addEventListener('click',    () => { weekStart.setDate(weekStart.getDate()+7); renderCalendar(); });
-$('btn-today').addEventListener('click',   () => { weekStart=getWeekStart(); renderCalendar(); });
-$('btn-refresh').addEventListener('click', () => { $('app').style.display='none'; $('loading-screen').style.display='flex'; boot(); });
-$('panel-close').addEventListener('click', closePanel);
+$('btn-prev').addEventListener('click', () => {
+  weekStart.setDate(weekStart.getDate()-7); renderCalendar();
+});
+$('btn-next').addEventListener('click', () => {
+  weekStart.setDate(weekStart.getDate()+7); renderCalendar();
+});
+$('btn-today').addEventListener('click', () => {
+  weekStart=getWeekStart(); renderCalendar(); scrollToNow();
+});
+$('btn-refresh').addEventListener('click', async () => {
+  $('app').style.display='none';
+  $('loading-screen').style.display='flex';
+  allItems=[];
+  await boot();
+});
 $('panel-overlay').addEventListener('click', closePanel);
+$('pc').addEventListener('click', closePanel);
 $('lb-close').addEventListener('click', closeLightbox);
 $('lightbox').addEventListener('click', e => { if(e.target===$('lightbox')) closeLightbox(); });
 document.addEventListener('keydown', e => {
@@ -902,7 +1135,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ─────────────────────────────────────────────────────────────────
-// Go
+// GO
 // ─────────────────────────────────────────────────────────────────
 boot();
 </script>
