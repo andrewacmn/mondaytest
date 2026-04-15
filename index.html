@@ -485,9 +485,12 @@ function statusColour(s) {
 // ─────────────────────────────────────────────────────────
 // COLUMN MAP CACHE
 // ─────────────────────────────────────────────────────────
-const COL_KEY = 'cc_v6_' + (CONFIG.boardId || 'x');
+const COL_KEY = 'cc_v7_' + (CONFIG.boardId || 'x');
 const saveMap = m => localStorage.setItem(COL_KEY, JSON.stringify(m));
 const loadMap = () => { try { return JSON.parse(localStorage.getItem(COL_KEY)); } catch { return null; } };
+
+// All board columns stored globally after fetch — used by panel to show every status col
+let allBoardCols = [];
 
 function autoMap(cols) {
   const find = fn => { const c = cols.find(fn); return c ? c.id : ''; };
@@ -632,7 +635,7 @@ async function fetchItems(colMap) {
 }
 
 async function fetchDetail(itemId, colMap) {
-  const ids = JSON.stringify([...new Set(Object.values(colMap).filter(Boolean))]);
+  // Fetch ALL column values so we can display every status column
   const d = await api(`{
     items(ids:[${itemId}]) {
       id name
@@ -646,7 +649,7 @@ async function fetchDetail(itemId, colMap) {
           creator { id name }
         }
       }
-      column_values(ids:${ids}) { id value text }
+      column_values { id value text }
     }
   }`);
   return d?.items?.[0] || null;
@@ -689,6 +692,7 @@ async function boot() {
   try {
     setMsg('Loading board columns…');
     const cols = await fetchColumns();
+    allBoardCols = cols;
     console.log('[columns]', cols);
 
     colMap = loadMap() || autoMap(cols);
@@ -978,41 +982,34 @@ function renderPanel(item) {
     pb.appendChild(empty);
   }
 
-  // ── Status fields — always visible when values exist ──
-  // Show as editable dropdown if column ID is mapped, read-only pill if not
-  const CONCEPT_OPTS   = ['Pending','Ready For Client Review','Approved','Amends Required','On Hold','Cancelled'];
-  const PROD_OPTS      = ['Pending','Ready for Client Review','Approved','Amends Required','In Production','On Hold'];
-  const COPY_OPTS      = ['Pending','Ready For Client Review','Approved','Amends Required','On Hold'];
+  // ── Status fields — every color column with a value ────
+  // Pull directly from raw column_values so nothing depends on regex detection
+  const rawCV = item._rawCols || [];
+  const colorCols = allBoardCols.filter(c => c.type === 'color');
+  const statusFields = colorCols
+    .map(c => {
+      const cv = rawCV.find(r => r.id === c.id);
+      return { id: c.id, label: c.title, value: (cv?.text || '').trim() };
+    })
+    .filter(f => f.value); // only show columns that have a value
 
-  const statusDefs = [
-    { label: 'Concept Status',    value: item.conceptStatus,    colId: colMap.conceptCol,    opts: CONCEPT_OPTS },
-    { label: 'Asset Status',      value: item.productionStatus, colId: colMap.prodCol,       opts: PROD_OPTS    },
-    { label: 'Copy Status',       value: item.copyStatus,       colId: colMap.copyStatusCol, opts: COPY_OPTS    },
-  ];
-
-  // Show row if any status has a value OR any column is mapped
-  const showStatuses = statusDefs.some(s => s.value || s.colId);
-  if (showStatuses) {
+  if (statusFields.length) {
     pb.appendChild(mkdiv());
     const row = el('div', 'p-status-row');
-    statusDefs.forEach(({ label, value, colId, opts }) => {
-      if (!value && !colId) return; // skip entirely empty unmapped fields
-      if (colId) {
-        // Editable dropdown
-        row.appendChild(statusDropdown(label, opts, value, v => updateCol(item.id, colId, v)));
-      } else {
-        // Read-only pill — column not auto-detected but value exists
-        const sf = el('div','p-field');
-        const lbl = document.createElement('label'); lbl.textContent = label; sf.appendChild(lbl);
-        const pill = el('div');
-        const c = statusColour(value);
-        pill.style.cssText = `display:inline-block;padding:4px 8px;border-radius:5px;font-size:12px;font-weight:600;background:${c}1a;color:${c};border:1px solid ${c}33;`;
-        pill.textContent = value || '—';
-        sf.appendChild(pill);
-        row.appendChild(sf);
-      }
+    statusFields.forEach(({ id, label, value }) => {
+      const sf = el('div', 'p-field');
+      const lbl = document.createElement('label'); lbl.textContent = label; sf.appendChild(lbl);
+      const sel = document.createElement('select');
+      // Always include the current value so it shows even if not in default list
+      const defaultOpts = ['Pending','Ready For Client Review','Ready for Client Review','Approved','Amends Required','In Production','On Hold','Cancelled'];
+      const opts = defaultOpts.includes(value) ? defaultOpts : [value, ...defaultOpts];
+      opts.forEach(o => sel.appendChild(new Option(o, o)));
+      sel.value = value;
+      sel.addEventListener('change', () => updateCol(item.id, id, sel.value).catch(console.error));
+      sf.appendChild(sel);
+      row.appendChild(sf);
     });
-    if (row.children.length) pb.appendChild(row);
+    pb.appendChild(row);
   }
 
   // ── Meta grid ──────────────────────────────────────────
