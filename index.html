@@ -495,7 +495,7 @@ let allBoardCols = [];
 function autoMap(cols) {
   const find = fn => { const c = cols.find(fn); return c ? c.id : ''; };
   // Color columns — grab all of them, we'll show all in the panel anyway
-  const colorCols = cols.filter(c => c.type === 'color');
+  const colorCols = cols.filter(c => c.type === 'color' || c.type === 'status');
   const [conceptCol, prodCol, copyStatusCol] = [
     colorCols.find(c => /concept/i.test(c.title))?.id || '',
     colorCols.find(c => /product|asset/i.test(c.title))?.id || '',
@@ -943,7 +943,7 @@ async function openPanel(itemId) {
 
     console.log('[openPanel] _rawCols count:', item._rawCols.length);
     console.log('[openPanel] allBoardCols count:', allBoardCols.length);
-    console.log('[openPanel] color cols:', allBoardCols.filter(c => c.type === 'color').map(c => c.title));
+    console.log('[openPanel] color cols:', allBoardCols.filter(c => c.type === 'color' || c.type === 'status').map(c => c.title));
 
     renderPanel(item);
   } catch (e) {
@@ -999,13 +999,13 @@ function renderPanel(item) {
     pb.appendChild(empty);
   }
 
-  // ── Status fields — every color column that has a value ─
+  const isStatusCol = c => c.type === 'color' || c.type === 'status';
   try {
     const rawCV = item._rawCols || [];
     console.log('[STATUS] allBoardCols:', allBoardCols.length, 'rawCV:', rawCV.length);
 
     const statusFields = allBoardCols
-      .filter(c => c.type === 'color')
+      .filter(c => c.type === 'color' || c.type === 'status')
       .map(c => {
         const match = rawCV.find(r => r.id === c.id);
         const value = (match?.text || '').trim();
