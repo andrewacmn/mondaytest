@@ -485,7 +485,7 @@ function statusColour(s) {
 // ─────────────────────────────────────────────────────────
 // COLUMN MAP CACHE
 // ─────────────────────────────────────────────────────────
-const COL_KEY = 'cc_v7_' + (CONFIG.boardId || 'x');
+const COL_KEY = 'cc_v8_' + (CONFIG.boardId || 'x');
 const saveMap = m => localStorage.setItem(COL_KEY, JSON.stringify(m));
 const loadMap = () => { try { return JSON.parse(localStorage.getItem(COL_KEY)); } catch { return null; } };
 
@@ -494,12 +494,19 @@ let allBoardCols = [];
 
 function autoMap(cols) {
   const find = fn => { const c = cols.find(fn); return c ? c.id : ''; };
+  // Color columns — grab all of them, we'll show all in the panel anyway
+  const colorCols = cols.filter(c => c.type === 'color');
+  const [conceptCol, prodCol, copyStatusCol] = [
+    colorCols.find(c => /concept/i.test(c.title))?.id || '',
+    colorCols.find(c => /product|asset/i.test(c.title))?.id || '',
+    colorCols.find(c => /copy/i.test(c.title))?.id || '',
+  ];
   return {
     dateCol:       find(c => c.type === 'date'),
     filesCol:      find(c => c.type === 'file') || find(c => /final.asset|asset|attachment|file/i.test(c.title)),
-    conceptCol:    find(c => /concept.*status|concept/i.test(c.title) && c.type === 'color'),
-    prodCol:       find(c => /production.*status|production/i.test(c.title) && c.type === 'color'),
-    copyStatusCol: find(c => /copy.*status|copy.*approv/i.test(c.title) && c.type === 'color'),
+    conceptCol,
+    prodCol,
+    copyStatusCol,
     typeCol:       find(c => /content.?type/i.test(c.title)),
     netCol:        find(c => /network|platform/i.test(c.title)),
     copyCol:       find(c => /push.?copy|^copy$|caption/i.test(c.title)),
