@@ -123,11 +123,6 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #f1f5f9; color: 
 .p-preview-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 40px; background: #f8fafc; border-radius: 8px; margin-bottom: 16px; }
 .p-preview-empty p { font-size: 12px; color: #94a3b8; }
 
-/* Debug box */
-.p-debug { background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 10px 12px; margin-bottom: 16px; }
-.p-debug-title { font-size: 10px; font-weight: 700; color: #92400e; margin-bottom: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
-.p-debug pre { font-size: 9px; color: #78350f; white-space: pre-wrap; word-break: break-all; max-height: 120px; overflow-y: auto; display: none; }
-
 /* Multiple assets grid */
 .p-assets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
 .p-asset-card { border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; cursor: pointer; transition: border-color .15s; }
@@ -405,7 +400,8 @@ function extractFilesFromColVal(val, colId, itemName) {
     if (p.files && Array.isArray(p.files)) {
       const files = p.files.flatMap((f, i) => {
         // Try every known URL property
-        const url = [f.url, f.linkUrl, f.link, f.publicUrl, f.public_url, f.shareUrl, f.src, f.href]
+        // NOTE: monday's native Dropbox integration uses "linkToFile"
+        const url = [f.linkToFile, f.url, f.linkUrl, f.link, f.publicUrl, f.public_url, f.shareUrl, f.src, f.href]
           .map(v => (typeof v === 'string' ? v.trim() : ''))
           .find(v => v && v.startsWith('http'));
         if (!url) {
@@ -931,22 +927,7 @@ function renderPanel(item) {
     const empty = el('div', 'p-preview-empty');
     empty.innerHTML = `${svgFile(32,'#cbd5e1')}<p>No assets found for this item</p>`;
 
-    // Debug box so user can see what's coming back
-    const dbg = el('div', 'p-debug');
-    const dbgTitle = el('div', 'p-debug-title');
-    dbgTitle.innerHTML = '🔍 Debug info (tap to expand)';
-    const dbgPre = el('pre');
-    const fileCols = item._rawCols.filter(c => {
-      try { const p = JSON.parse(c.value||'{}'); return p.files !== undefined; } catch { return false; }
-    });
-    dbgPre.textContent = fileCols.length
-      ? 'File columns found:\n' + fileCols.map(c => `• col id: ${c.id}\n  value: ${(c.value||'').slice(0,300)}`).join('\n\n')
-      : 'No file columns found in this item.\nAll columns:\n' + item._rawCols.map(c => `• ${c.id}: ${(c.value||'(empty)').slice(0,80)}`).join('\n');
-    dbgTitle.addEventListener('click', () => { dbgPre.style.display = dbgPre.style.display === 'block' ? 'none' : 'block'; });
-    dbg.appendChild(dbgTitle); dbg.appendChild(dbgPre);
-
     pb.appendChild(empty);
-    pb.appendChild(dbg);
   }
 
   // ── Status dropdowns ───────────────────────────────────
