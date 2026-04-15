@@ -859,8 +859,18 @@ function renderMedia(asset, container, fullSize) {
 
   } else if (vid && direct) {
     const el = document.createElement('video');
-    el.src = direct; el.muted = true; el.playsInline = true; el.preload = 'metadata';
-    if (fullSize) { el.controls = true; el.muted = false; }
+    el.muted = true; el.playsInline = true; el.preload = 'metadata';
+    el.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+    if (fullSize) {
+      el.controls = true;
+      el.muted = false;
+      el.src = direct;
+    } else {
+      // Thumbnail: seek to 1s after metadata to render a visible frame
+      el.addEventListener('loadedmetadata', () => { el.currentTime = 1; }, { once: true });
+      el.addEventListener('error', () => { try { el.currentTime = 0; } catch {} }, { once: true });
+      el.src = direct;
+    }
     container.appendChild(el);
 
   } else {
