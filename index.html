@@ -204,7 +204,7 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #f1f5f9; color: 
 <script>
 const CONFIG = {
   apiToken: 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ1NjA4NTcwMSwiYWFpIjoxMSwidWlkIjo2OTYyOTM1MSwiaWFkIjoiMjAyNS0wMS0xMFQwNjoyMTozMi4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6NjQzMTgxMCwicmduIjoidXNlMSJ9.CaVqnG51LtzKP4MTxXCflpqaZA64n0TvS6DzmK-7R84',  // ← monday.com API v2 token
-  boardId:  '18408062519,   // ← number from board URL
+  boardId:  '18408062519',   // ← number from board URL
   timezone: 'Australia/Sydney',     // ← change if needed
 };
 </script>
@@ -634,7 +634,7 @@ async function fetchItems(colMap) {
   return d?.boards?.[0]?.items_page?.items || [];
 }
 
-async function fetchDetail(itemId, colMap) {
+async function fetchDetail(itemId) {
   const d = await api(`{
     items(ids:[${itemId}]) {
       id name
@@ -924,12 +924,23 @@ async function openPanel(itemId) {
   $('panel').classList.add('open');
 
   try {
-    const raw  = await fetchDetail(itemId, colMap);
+    // Ensure we have board column metadata (fetch fresh if missing)
+    if (!allBoardCols.length) {
+      allBoardCols = await fetchColumns();
+      console.log('[openPanel] fetched columns fresh:', allBoardCols.length);
+    }
+
+    const raw = await fetchDetail(itemId);
     if (!raw) throw new Error('Item not found');
     const item = parseItem(raw, colMap);
+
+    console.log('[openPanel] _rawCols count:', item._rawCols.length);
+    console.log('[openPanel] allBoardCols count:', allBoardCols.length);
+    console.log('[openPanel] color cols:', allBoardCols.filter(c => c.type === 'color').map(c => c.title));
+
     renderPanel(item);
   } catch (e) {
-    console.error(e);
+    console.error('[openPanel] error:', e);
     $('panel-body').innerHTML = `<p style="color:#ef4444;padding:16px;font-size:12px;">${esc(e.message)}</p>`;
   }
 }
@@ -982,48 +993,48 @@ function renderPanel(item) {
   }
 
   // ── Status fields — every color column that has a value ─
-  // allBoardCols has the types/titles (fetched on boot, always available)
-  // _rawCols has all the values (fetched fresh in fetchDetail)
-  const rawCV = item._rawCols || [];
-  console.log('[STATUS] allBoardCols:', allBoardCols.length, 'rawCV:', rawCV.length);
+  try {
+    const rawCV = item._rawCols || [];
+    console.log('[STATUS] allBoardCols:', allBoardCols.length, 'rawCV:', rawCV.length);
 
-  const statusFields = allBoardCols
-    .filter(c => c.type === 'color')
-    .map(c => {
-      const match = rawCV.find(r => r.id === c.id);
-      const value = (match?.text || '').trim();
-      console.log(`[STATUS] col "${c.title}" id=${c.id} value="${value}"`);
-      return { id: c.id, label: c.title, value };
-    })
-    .filter(f => f.value);
+    const statusFields = allBoardCols
+      .filter(c => c.type === 'color')
+      .map(c => {
+        const match = rawCV.find(r => r.id === c.id);
+        const value = (match?.text || '').trim();
+        return { id: c.id, label: c.title, value };
+      })
+      .filter(f => f.value);
 
-  console.log('[STATUS] fields to show:', statusFields.length, statusFields);
+    console.log('[STATUS] fields to show:', statusFields.length, statusFields.map(f => f.label + '=' + f.value));
 
-  if (statusFields.length) {
-    pb.appendChild(mkdiv());
-    const row = el('div', 'p-status-row');
-    statusFields.forEach(({ id, label, value }) => {
-      const sf = el('div', 'p-field');
-      const lbl = document.createElement('label'); lbl.textContent = label; sf.appendChild(lbl);
-      const sel = document.createElement('select');
-      // Build option list: always include current value first
-      const baseOpts = ['Pending','To Be Briefed','To Be Written','To Be Scheduled',
-        'Ready For Client Review','Ready for Client Review',
-        'In Production','Approved','Amends Required','On Hold','Cancelled','Scheduled'];
-      const opts = [...new Set([value, ...baseOpts])];
-      opts.forEach(o => sel.appendChild(new Option(o, o)));
-      sel.value = value;
-      const c = statusColour(value);
-      sel.style.cssText = `font-weight:600;color:${c};`;
-      sel.addEventListener('change', () => {
-        const nc = statusColour(sel.value);
-        sel.style.cssText = `font-weight:600;color:${nc};`;
-        updateCol(item.id, id, sel.value).catch(console.error);
+    if (statusFields.length) {
+      pb.appendChild(mkdiv());
+      const row = el('div', 'p-status-row');
+      statusFields.forEach(({ id, label, value }) => {
+        const sf = el('div', 'p-field');
+        const lbl = document.createElement('label'); lbl.textContent = label; sf.appendChild(lbl);
+        const sel = document.createElement('select');
+        const baseOpts = ['Pending','To Be Briefed','To Be Written','To Be Scheduled',
+          'Ready For Client Review','Ready for Client Review',
+          'In Production','Approved','Amends Required','On Hold','Cancelled','Scheduled'];
+        const opts = [...new Set([value, ...baseOpts])];
+        opts.forEach(o => sel.appendChild(new Option(o, o)));
+        sel.value = value;
+        const c = statusColour(value);
+        sel.style.cssText = `font-weight:600;color:${c};`;
+        sel.addEventListener('change', () => {
+          const nc = statusColour(sel.value);
+          sel.style.cssText = `font-weight:600;color:${nc};`;
+          updateCol(item.id, id, sel.value).catch(console.error);
+        });
+        sf.appendChild(sel);
+        row.appendChild(sf);
       });
-      sf.appendChild(sel);
-      row.appendChild(sf);
-    });
-    if (row.children.length) pb.appendChild(row);
+      if (row.children.length) pb.appendChild(row);
+    }
+  } catch(statusErr) {
+    console.error('[STATUS] error in status section:', statusErr);
   }
 
   // ── Meta grid ──────────────────────────────────────────
