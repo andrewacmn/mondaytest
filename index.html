@@ -485,7 +485,7 @@ function statusColour(s) {
 // ─────────────────────────────────────────────────────────
 // COLUMN MAP CACHE
 // ─────────────────────────────────────────────────────────
-const COL_KEY = 'cc_v5_' + (CONFIG.boardId || 'x');
+const COL_KEY = 'cc_v6_' + (CONFIG.boardId || 'x');
 const saveMap = m => localStorage.setItem(COL_KEY, JSON.stringify(m));
 const loadMap = () => { try { return JSON.parse(localStorage.getItem(COL_KEY)); } catch { return null; } };
 
@@ -703,7 +703,7 @@ async function boot() {
     $('loading-screen').style.display = 'none';
     $('app').style.display = 'flex';
     renderCalendar();
-    scrollToNow();
+    // No auto-scroll — user can click Today to jump to now
   } catch (e) {
     console.error(e);
     showError('Failed to load', e.message);
@@ -978,14 +978,41 @@ function renderPanel(item) {
     pb.appendChild(empty);
   }
 
-  // ── Status dropdowns (up to 3) ─────────────────────────
-  const hasStatuses = colMap.conceptCol || colMap.prodCol || colMap.copyStatusCol;
-  if (hasStatuses) {
+  // ── Status fields — always visible when values exist ──
+  // Show as editable dropdown if column ID is mapped, read-only pill if not
+  const CONCEPT_OPTS   = ['Pending','Ready For Client Review','Approved','Amends Required','On Hold','Cancelled'];
+  const PROD_OPTS      = ['Pending','Ready for Client Review','Approved','Amends Required','In Production','On Hold'];
+  const COPY_OPTS      = ['Pending','Ready For Client Review','Approved','Amends Required','On Hold'];
+
+  const statusDefs = [
+    { label: 'Concept Status',    value: item.conceptStatus,    colId: colMap.conceptCol,    opts: CONCEPT_OPTS },
+    { label: 'Asset Status',      value: item.productionStatus, colId: colMap.prodCol,       opts: PROD_OPTS    },
+    { label: 'Copy Status',       value: item.copyStatus,       colId: colMap.copyStatusCol, opts: COPY_OPTS    },
+  ];
+
+  // Show row if any status has a value OR any column is mapped
+  const showStatuses = statusDefs.some(s => s.value || s.colId);
+  if (showStatuses) {
+    pb.appendChild(mkdiv());
     const row = el('div', 'p-status-row');
-    if (colMap.conceptCol)    row.appendChild(statusDropdown('Concept Status',    ['Pending','Ready For Client Review','Approved','Amends Required','On Hold','Cancelled'],        item.conceptStatus,    v => updateCol(item.id, colMap.conceptCol, v)));
-    if (colMap.prodCol)       row.appendChild(statusDropdown('Asset Status',      ['Pending','Ready for Client Review','Approved','Amends Required','In Production','On Hold'],    item.productionStatus, v => updateCol(item.id, colMap.prodCol, v)));
-    if (colMap.copyStatusCol) row.appendChild(statusDropdown('Copy Status',       ['Pending','Ready For Client Review','Approved','Amends Required','On Hold'],                    item.copyStatus,       v => updateCol(item.id, colMap.copyStatusCol, v)));
-    pb.appendChild(row);
+    statusDefs.forEach(({ label, value, colId, opts }) => {
+      if (!value && !colId) return; // skip entirely empty unmapped fields
+      if (colId) {
+        // Editable dropdown
+        row.appendChild(statusDropdown(label, opts, value, v => updateCol(item.id, colId, v)));
+      } else {
+        // Read-only pill — column not auto-detected but value exists
+        const sf = el('div','p-field');
+        const lbl = document.createElement('label'); lbl.textContent = label; sf.appendChild(lbl);
+        const pill = el('div');
+        const c = statusColour(value);
+        pill.style.cssText = `display:inline-block;padding:4px 8px;border-radius:5px;font-size:12px;font-weight:600;background:${c}1a;color:${c};border:1px solid ${c}33;`;
+        pill.textContent = value || '—';
+        sf.appendChild(pill);
+        row.appendChild(sf);
+      }
+    });
+    if (row.children.length) pb.appendChild(row);
   }
 
   // ── Meta grid ──────────────────────────────────────────
