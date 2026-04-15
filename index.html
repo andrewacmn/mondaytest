@@ -155,6 +155,29 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #f1f5f9; color: 
 .p-link { font-size: 12px; color: #3b82f6; word-break: break-all; text-decoration: none; display: block; margin-bottom: 12px; }
 .p-link:hover { text-decoration: underline; }
 
+/* Mention autocomplete */
+.mention-wrap { position: relative; }
+.mention-dropdown {
+  display: none; position: absolute; left: 0; top: 100%; margin-top: 2px;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.1); z-index: 200;
+  min-width: 200px; max-height: 220px; overflow-y: auto;
+}
+.mention-dropdown.open { display: block; }
+.mention-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 12px; cursor: pointer; font-size: 12px; color: #1e293b;
+}
+.mention-item:hover { background: #f1f5f9; }
+.mention-avatar {
+  width: 26px; height: 26px; border-radius: 50%; background: #e2e8f0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: #64748b; flex-shrink: 0;
+  overflow: hidden;
+}
+.mention-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.mention-name { font-weight: 500; }
+
 /* Comments */
 .comment-form { position: relative; }
 .comment-form textarea { width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; padding: 9px 11px; font-size: 12px; font-family: inherit; resize: none; outline: none; line-height: 1.5; }
@@ -673,10 +696,17 @@ async function updateCol(itemId, columnId, value) {
   await api(`mutation { change_simple_column_value(item_id:${itemId}, board_id:${CONFIG.boardId}, column_id:"${columnId}", value:${JSON.stringify(value)}) { id } }`);
 }
 
+async function fetchBoardUsers() {
+  try {
+    const d = await api(`{ users(limit:100) { id name photo_thumb } }`);
+    return d?.users || [];
+  } catch { return []; }
+}
+
 // ─────────────────────────────────────────────────────────
 // APP STATE
 // ─────────────────────────────────────────────────────────
-let allItems = [], weekStart = getWeekStart(), colMap = null;
+let allItems = [], weekStart = getWeekStart(), colMap = null, boardUsers = [];
 
 function getWeekStart(d) {
   const x = new Date(d || new Date());
@@ -709,6 +739,9 @@ async function boot() {
     const raw = await fetchItems(colMap);
     allItems = raw.map(r => parseItem(r, colMap)).filter(i => i.scheduledDate);
     console.log(`[boot] ${allItems.length} items with dates`);
+
+    // Fetch users for @mention autocomplete (non-blocking)
+    fetchBoardUsers().then(u => { boardUsers = u; console.log('[users]', boardUsers.length); });
 
     $('loading-screen').style.display = 'none';
     $('app').style.display = 'flex';
@@ -957,7 +990,119 @@ function closePanel() {
   $('panel').classList.remove('open');
 }
 
-function renderPanel(item) {
+// ─────────────────────────────────────────────────────────
+// @MENTION AUTOCOMPLETE
+// ─────────────────────────────────────────────────────────
+function makeMentionInput(rows, placeholder) {
+  const wrap = el('div', 'mention-wrap');
+  const ta = document.createElement('textarea');
+  ta.rows = rows;
+  ta.placeholder = placeholder;
+  ta.style.cssText = 'width:100%;border:1px solid #e2e8f0;border-radius:6px;padding:9px 11px;font-size:12px;font-family:inherit;resize:none;outline:none;line-height:1.5;';
+
+  const dd = el('div', 'mention-dropdown');
+  wrap.appendChild(ta);
+  wrap.appendChild(dd);
+
+  // Map: display name → monday user id (for API formatting)
+  const mentionMap = {};
+
+  let activeIndex = -1;
+
+  function getQuery() {
+    const pos = ta.selectionStart;
+    const before = ta.value.slice(0, pos);
+    const m = before.match(/@([\w\s]*)$/);
+    return m ? { query: m[1].toLowerCase(), start: pos - m[0].length } : null;
+  }
+
+  function showDropdown(items, atStart) {
+    dd.innerHTML = '';
+    activeIndex = -1;
+    if (!items.length) { dd.classList.remove('open'); return; }
+    items.forEach((u, i) => {
+      const item = el('div', 'mention-item');
+      const av = el('div', 'mention-avatar');
+      if (u.photo_thumb) {
+        const img = document.createElement('img');
+        img.src = u.photo_thumb; img.alt = u.name;
+        av.appendChild(img);
+      } else {
+        av.textContent = u.name.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase();
+      }
+      const nm = el('span', 'mention-name'); nm.textContent = u.name;
+      item.appendChild(av); item.appendChild(nm);
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        insertMention(u, atStart);
+        dd.classList.remove('open');
+      });
+      dd.appendChild(item);
+    });
+    dd.classList.add('open');
+  }
+
+  function insertMention(user, atStart) {
+    const pos = ta.selectionStart;
+    const before = ta.value.slice(0, atStart);
+    const after  = ta.value.slice(pos);
+    const insert = '@' + user.name + ' ';
+    ta.value = before + insert + after;
+    mentionMap[user.name] = user.id;
+    const newPos = before.length + insert.length;
+    ta.setSelectionRange(newPos, newPos);
+    ta.focus();
+  }
+
+  ta.addEventListener('input', () => {
+    const q = getQuery();
+    if (!q) { dd.classList.remove('open'); return; }
+    const results = boardUsers
+      .filter(u => u.name.toLowerCase().includes(q.query))
+      .slice(0, 8);
+    showDropdown(results, q.start);
+  });
+
+  ta.addEventListener('keydown', e => {
+    if (!dd.classList.contains('open')) return;
+    const items = dd.querySelectorAll('.mention-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, items.length - 1);
+      items.forEach((it, i) => it.style.background = i === activeIndex ? '#f1f5f9' : '');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, 0);
+      items.forEach((it, i) => it.style.background = i === activeIndex ? '#f1f5f9' : '');
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault();
+      items[activeIndex]?.dispatchEvent(new MouseEvent('mousedown'));
+    } else if (e.key === 'Escape') {
+      dd.classList.remove('open');
+    }
+  });
+
+  document.addEventListener('click', e => {
+    if (!wrap.contains(e.target)) dd.classList.remove('open');
+  }, true);
+
+  // Return textarea and a function to get API-formatted text
+  ta.getFormattedText = () => {
+    let text = ta.value;
+    // Replace @Name with monday mention format {@userId}
+    Object.entries(mentionMap).forEach(([name, id]) => {
+      text = text.replaceAll('@' + name, `{@${id}}`);
+    });
+    return text;
+  };
+
+  return { wrap, ta };
+}
+
+function highlightMentions(text) {
+  return text.replace(/@([A-Za-z][A-Za-z0-9\s_-]{0,40})/g,
+    (_, name) => `<span style="color:#3b82f6;font-weight:600;">@${name}</span>`);
+}
   $('panel-title').textContent = item.name;
   const pb = $('panel-body');
   pb.innerHTML = '';
@@ -1099,23 +1244,20 @@ function renderPanel(item) {
   cl.textContent = `Updates (${item.updates.length} comment${item.updates.length!==1?'s':''}, ${totalReplies} repl${totalReplies!==1?'ies':'y'})`;
   pb.appendChild(cl);
 
-  // New comment box
-  const cf = el('div','comment-form');
-  const ta = document.createElement('textarea');
-  ta.rows=3; ta.placeholder='Write an update… (use @Name to mention a team member)';
-  cf.appendChild(ta);
-  const hint = el('div','comment-hint');
-  hint.textContent = 'Tip: type @Name to mention someone. Mentions will appear in monday.com notifications.';
-  cf.appendChild(hint);
+  // New comment box with @mention support
+  const { wrap: cfWrap, ta } = makeMentionInput(3, 'Write an update… type @ to mention someone');
+  ta.style.borderRadius = '6px';
   const cs2 = el('div','comment-send');
   const sb = document.createElement('button'); sb.className='post-btn'; sb.textContent='Post Update';
   sb.addEventListener('click', async () => {
-    const txt = ta.value.trim(); if (!txt) return;
+    const txt = ta.getFormattedText().trim(); if (!txt) return;
     sb.disabled=true; sb.textContent='Posting…';
     try { await postComment(item.id, txt); await openPanel(item.id); }
     catch(e) { console.error(e); sb.disabled=false; sb.textContent='Post Update'; }
   });
-  cs2.appendChild(sb); cf.appendChild(cs2); pb.appendChild(cf);
+  cs2.appendChild(sb);
+  pb.appendChild(cfWrap);
+  pb.appendChild(cs2);
 
   // Comment list with replies
   if (item.updates.length) {
@@ -1169,15 +1311,15 @@ function buildCommentItem(u, itemId) {
   ci.appendChild(replyBtn);
 
   const rf = el('div','reply-form');
-  const rta = document.createElement('textarea');
-  rta.rows=2; rta.placeholder='Write a reply… (use @Name to mention)';
-  rf.appendChild(rta);
+  const { wrap: rfWrap, ta: rta } = makeMentionInput(2, 'Reply… type @ to mention');
+  rta.style.cssText = 'width:100%;border:1px solid #e2e8f0;border-radius:5px;padding:7px 9px;font-size:11px;font-family:inherit;resize:none;outline:none;line-height:1.5;';
+  rf.appendChild(rfWrap);
   const ractions = el('div','reply-form-actions');
   const rsend = document.createElement('button'); rsend.className='reply-btn'; rsend.textContent='Reply';
   const rcancel = document.createElement('button'); rcancel.className='reply-cancel'; rcancel.textContent='Cancel';
   rcancel.addEventListener('click', () => { rf.classList.remove('open'); rta.value=''; });
   rsend.addEventListener('click', async () => {
-    const txt = rta.value.trim(); if (!txt) return;
+    const txt = rta.getFormattedText().trim(); if (!txt) return;
     rsend.disabled=true; rsend.textContent='Posting…';
     try { await postReply(u.id, txt); await openPanel(itemId); }
     catch(e) { console.error(e); rsend.disabled=false; rsend.textContent='Reply'; }
@@ -1194,11 +1336,6 @@ function buildCommentItem(u, itemId) {
   return ci;
 }
 
-function highlightMentions(text) {
-  // Highlight @mentions in comment text
-  return text.replace(/@([A-Za-z][A-Za-z0-9\s_-]{0,30})/g,
-    (_, name) => `<span style="color:#3b82f6;font-weight:600;">@${name}</span>`);
-}
 
 // ─────────────────────────────────────────────────────────
 // ASSET CARD (panel, multi-asset grid)
