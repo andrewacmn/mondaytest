@@ -133,8 +133,8 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #f1f5f9; color: 
 .p-asset-name { font-size: 10px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .p-asset-ext { font-size: 9px; color: #94a3b8; text-transform: uppercase; margin-top: 1px; }
 
-/* Status selects */
-.p-status-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+/* Status selects — up to 3 columns */
+.p-status-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
 .p-field label { display: block; font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
 .p-field select { width: 100%; height: 32px; padding: 0 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; font-family: inherit; color: #1e293b; background: #fff; outline: none; cursor: pointer; }
 .p-field select:focus { border-color: #3b82f6; }
@@ -156,17 +156,31 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #f1f5f9; color: 
 .p-link:hover { text-decoration: underline; }
 
 /* Comments */
+.comment-form { position: relative; }
 .comment-form textarea { width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; padding: 9px 11px; font-size: 12px; font-family: inherit; resize: none; outline: none; line-height: 1.5; }
 .comment-form textarea:focus { border-color: #3b82f6; }
-.comment-send { display: flex; justify-content: flex-end; margin-top: 6px; margin-bottom: 12px; }
+.comment-hint { font-size: 10px; color: #94a3b8; margin-top: 4px; margin-bottom: 4px; }
+.comment-send { display: flex; justify-content: flex-end; margin-top: 6px; margin-bottom: 14px; }
 .post-btn { height: 30px; padding: 0 14px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
 .post-btn:hover { background: #2563eb; }
 .post-btn:disabled { background: #93c5fd; cursor: not-allowed; }
-.comment-item { background: #f8fafc; border-radius: 6px; padding: 9px 11px; margin-bottom: 7px; }
+.comment-item { background: #f8fafc; border-radius: 6px; padding: 9px 11px; margin-bottom: 8px; }
 .comment-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 .comment-author { font-size: 11px; font-weight: 600; color: #0f172a; }
 .comment-date { font-size: 10px; color: #94a3b8; }
-.comment-body { font-size: 12px; color: #334155; line-height: 1.5; white-space: pre-wrap; }
+.comment-body { font-size: 12px; color: #334155; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+.comment-reply-btn { font-size: 10px; color: #94a3b8; background: none; border: none; cursor: pointer; padding: 4px 0 0; font-family: inherit; }
+.comment-reply-btn:hover { color: #3b82f6; }
+.replies-list { margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 7px; }
+.reply-item { background: #fff; border-radius: 5px; padding: 7px 9px; border: 1px solid #f1f5f9; }
+.reply-form { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e2e8f0; display: none; }
+.reply-form.open { display: block; }
+.reply-form textarea { width: 100%; border: 1px solid #e2e8f0; border-radius: 5px; padding: 7px 9px; font-size: 11px; font-family: inherit; resize: none; outline: none; line-height: 1.5; }
+.reply-form textarea:focus { border-color: #3b82f6; }
+.reply-form-actions { display: flex; gap: 6px; justify-content: flex-end; margin-top: 5px; }
+.reply-btn { height: 26px; padding: 0 10px; background: #3b82f6; color: #fff; border: none; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.reply-btn:disabled { background: #93c5fd; cursor: not-allowed; }
+.reply-cancel { height: 26px; padding: 0 10px; background: none; border: 1px solid #e2e8f0; border-radius: 5px; font-size: 11px; color: #64748b; cursor: pointer; font-family: inherit; }
 .no-comments { text-align: center; padding: 16px; font-size: 12px; color: #94a3b8; background: #f8fafc; border-radius: 6px; }
 
 /* Lightbox */
@@ -429,7 +443,8 @@ function extractFilesFromColVal(val, colId, itemName) {
 // ─────────────────────────────────────────────────────────
 function cleanGroupTitle(t) {
   // "5. Asset For Approval" → "Asset For Approval"
-  return (t || '').replace(/^\d+[\.\)\-\s]+/, '').trim();
+  // "8.1 Scheduled" → "Scheduled"
+  return (t || '').replace(/^[\d\.]+[\s\.\)\-]+/, '').trim();
 }
 
 function getDisplayStatus(item) {
@@ -470,23 +485,24 @@ function statusColour(s) {
 // ─────────────────────────────────────────────────────────
 // COLUMN MAP CACHE
 // ─────────────────────────────────────────────────────────
-const COL_KEY = 'cc_v4_' + (CONFIG.boardId || 'x');
+const COL_KEY = 'cc_v5_' + (CONFIG.boardId || 'x');
 const saveMap = m => localStorage.setItem(COL_KEY, JSON.stringify(m));
 const loadMap = () => { try { return JSON.parse(localStorage.getItem(COL_KEY)); } catch { return null; } };
 
 function autoMap(cols) {
   const find = fn => { const c = cols.find(fn); return c ? c.id : ''; };
   return {
-    dateCol:    find(c => c.type === 'date'),
-    filesCol:   find(c => c.type === 'file') || find(c => /final.asset|asset|attachment|file/i.test(c.title)),
-    conceptCol: find(c => /concept.*status|concept/i.test(c.title) && c.type === 'color'),
-    prodCol:    find(c => /production.*status|production/i.test(c.title) && c.type === 'color'),
-    typeCol:    find(c => /content.?type/i.test(c.title)),
-    netCol:     find(c => /network|platform/i.test(c.title)),
-    copyCol:    find(c => /push.?copy|^copy$|caption/i.test(c.title)),
-    explCol:    find(c => /explanation/i.test(c.title)),
-    linkCol:    find(c => /concept.*link/i.test(c.title) || (c.type === 'link' && /link/i.test(c.title))),
-    estCol:     find(c => /estimate/i.test(c.title)),
+    dateCol:       find(c => c.type === 'date'),
+    filesCol:      find(c => c.type === 'file') || find(c => /final.asset|asset|attachment|file/i.test(c.title)),
+    conceptCol:    find(c => /concept.*status|concept/i.test(c.title) && c.type === 'color'),
+    prodCol:       find(c => /production.*status|production/i.test(c.title) && c.type === 'color'),
+    copyStatusCol: find(c => /copy.*status|copy.*approv/i.test(c.title) && c.type === 'color'),
+    typeCol:       find(c => /content.?type/i.test(c.title)),
+    netCol:        find(c => /network|platform/i.test(c.title)),
+    copyCol:       find(c => /push.?copy|^copy$|caption/i.test(c.title)),
+    explCol:       find(c => /explanation/i.test(c.title)),
+    linkCol:       find(c => /concept.*link/i.test(c.title) || (c.type === 'link' && /link/i.test(c.title))),
+    estCol:        find(c => /estimate/i.test(c.title)),
   };
 }
 
@@ -500,7 +516,7 @@ function parseItem(raw, colMap) {
     assets: normaliseAssets(raw.assets),
     scheduledDate: null, scheduledDateObj: null,
     scheduledHour: null, scheduledMin: null, scheduledTimeStr: '',
-    conceptStatus: '', productionStatus: '',
+    conceptStatus: '', productionStatus: '', copyStatus: '',
     contentType: [], network: [],
     pushCopy: '', conceptExpl: '', conceptLink: '', conceptEst: '',
     updates: raw.updates || [],
@@ -523,9 +539,10 @@ function parseItem(raw, colMap) {
       out.scheduledTimeStr = fmt12(dt.hour, dt.min);
     }
 
-    if (col.id === colMap.conceptCol)  out.conceptStatus    = text;
-    if (col.id === colMap.prodCol)     out.productionStatus = text;
-    if (col.id === colMap.copyCol)     out.pushCopy         = text;
+    if (col.id === colMap.conceptCol)    out.conceptStatus    = text;
+    if (col.id === colMap.prodCol)       out.productionStatus = text;
+    if (col.id === colMap.copyStatusCol) out.copyStatus       = text;
+    if (col.id === colMap.copyCol)       out.pushCopy         = text;
     if (col.id === colMap.explCol)     out.conceptExpl      = text;
     if (col.id === colMap.estCol)      out.conceptEst       = text;
 
@@ -621,7 +638,14 @@ async function fetchDetail(itemId, colMap) {
       id name
       group { id title color }
       assets { id name url public_url file_extension }
-      updates(limit:50) { id text_body created_at creator { id name } }
+      updates(limit:50) {
+        id text_body created_at
+        creator { id name }
+        replies {
+          id text_body created_at
+          creator { id name }
+        }
+      }
       column_values(ids:${ids}) { id value text }
     }
   }`);
@@ -630,6 +654,10 @@ async function fetchDetail(itemId, colMap) {
 
 async function postComment(itemId, text) {
   await api(`mutation { create_update(item_id: ${itemId}, body: ${JSON.stringify(text)}) { id } }`);
+}
+
+async function postReply(updateId, text) {
+  await api(`mutation { create_reply(update_id: ${updateId}, body: ${JSON.stringify(text)}) { id } }`);
 }
 
 async function updateCol(itemId, columnId, value) {
@@ -915,40 +943,52 @@ function renderPanel(item) {
 
   // ── Asset preview ──────────────────────────────────────
   if (item.assets.length) {
-    const primary = item.assets[0];
+    const lbl = el('div', 'p-sec-label');
+    lbl.textContent = `Assets (${item.assets.length})`;
+    pb.appendChild(lbl);
 
     if (item.assets.length > 1) {
-      // Grid of all assets
-      const lbl = el('div', 'p-sec-label'); lbl.textContent = `Assets (${item.assets.length})`; pb.appendChild(lbl);
       const grid = el('div', 'p-assets-grid');
       item.assets.forEach(a => grid.appendChild(buildAssetCard(a)));
       pb.appendChild(grid);
     } else {
-      // Single asset — full preview
+      const primary = item.assets[0];
       const wrap = el('div', 'p-preview');
       renderMedia(primary, wrap, true);
-      pb.appendChild(wrap);
-      // Open in lightbox on click
       wrap.style.cursor = 'pointer';
       wrap.addEventListener('click', () => openLightbox(primary));
+      pb.appendChild(wrap);
+      // "Open in Dropbox" link below preview
+      const openRow = el('div');
+      openRow.style.cssText = 'text-align:right;margin-top:-8px;margin-bottom:14px;';
+      const openLink = document.createElement('a');
+      openLink.textContent = 'Open file ↗';
+      openLink.style.cssText = 'font-size:11px;color:#3b82f6;text-decoration:none;';
+      openLink.addEventListener('click', e => {
+        e.stopPropagation();
+        window.open(primary.url, '_blank', 'noopener,noreferrer');
+      });
+      openRow.appendChild(openLink);
+      pb.appendChild(openRow);
     }
   } else {
-    // No assets — show empty state + debug info
+    // No assets — just a blank placeholder box, no text
     const empty = el('div', 'p-preview-empty');
-    empty.innerHTML = `${svgFile(32,'#cbd5e1')}<p>No assets found for this item</p>`;
-
+    empty.style.background = '#f8fafc';
     pb.appendChild(empty);
   }
 
-  // ── Status dropdowns ───────────────────────────────────
-  if (colMap.conceptCol || colMap.prodCol) {
+  // ── Status dropdowns (up to 3) ─────────────────────────
+  const hasStatuses = colMap.conceptCol || colMap.prodCol || colMap.copyStatusCol;
+  if (hasStatuses) {
     const row = el('div', 'p-status-row');
-    if (colMap.conceptCol) row.appendChild(statusDropdown('Concept Status', ['Pending','Ready For Client Review','Approved','Amends Required','On Hold','Cancelled'], item.conceptStatus, v => updateCol(item.id, colMap.conceptCol, v)));
-    if (colMap.prodCol)    row.appendChild(statusDropdown('Production Status', ['Pending','Ready for Client Review','Approved','Amends Required','In Production','On Hold'], item.productionStatus, v => updateCol(item.id, colMap.prodCol, v)));
+    if (colMap.conceptCol)    row.appendChild(statusDropdown('Concept Status',    ['Pending','Ready For Client Review','Approved','Amends Required','On Hold','Cancelled'],        item.conceptStatus,    v => updateCol(item.id, colMap.conceptCol, v)));
+    if (colMap.prodCol)       row.appendChild(statusDropdown('Asset Status',      ['Pending','Ready for Client Review','Approved','Amends Required','In Production','On Hold'],    item.productionStatus, v => updateCol(item.id, colMap.prodCol, v)));
+    if (colMap.copyStatusCol) row.appendChild(statusDropdown('Copy Status',       ['Pending','Ready For Client Review','Approved','Amends Required','On Hold'],                    item.copyStatus,       v => updateCol(item.id, colMap.copyStatusCol, v)));
     pb.appendChild(row);
   }
 
-  // ── Meta ───────────────────────────────────────────────
+  // ── Meta grid ──────────────────────────────────────────
   const meta = el('div', 'p-meta');
   if (item.scheduledDate) {
     const d = new Date(item.scheduledDate + 'T00:00:00');
@@ -971,48 +1011,130 @@ function renderPanel(item) {
   [
     ['Concept Explanation', item.conceptExpl],
     ['Concept Estimate',    item.conceptEst],
-    ['Push Copy',          item.pushCopy],
+    ['Push Copy',           item.pushCopy],
   ].forEach(([label, val]) => {
-    if (!val) return;
+    if (!val || val === '–' || val === '-') return;
     pb.appendChild(mkdiv());
     const lbl = el('div','p-sec-label'); lbl.textContent=label; pb.appendChild(lbl);
-    const tb  = el('div','p-textbox');  tb.textContent=val;    pb.appendChild(tb);
+    const tb  = el('div','p-textbox');  tb.textContent=val;     pb.appendChild(tb);
   });
 
   if (item.conceptLink) {
     pb.appendChild(mkdiv());
     const lbl = el('div','p-sec-label'); lbl.textContent='Concept Link'; pb.appendChild(lbl);
     const a = document.createElement('a');
-    a.className='p-link'; a.href=item.conceptLink; a.target='_blank'; a.rel='noopener noreferrer';
-    a.textContent=item.conceptLink; pb.appendChild(a);
+    a.className='p-link'; a.rel='noopener noreferrer';
+    a.textContent = item.conceptLink;
+    a.addEventListener('click', e => { e.preventDefault(); window.open(item.conceptLink, '_blank', 'noopener,noreferrer'); });
+    pb.appendChild(a);
   }
 
-  // ── Comments ───────────────────────────────────────────
+  // ── Comments / Updates ─────────────────────────────────
   pb.appendChild(mkdiv());
-  const cl = el('div','p-sec-label'); cl.textContent=`Comments (${item.updates.length})`; pb.appendChild(cl);
+  const totalReplies = item.updates.reduce((n, u) => n + (u.replies?.length || 0), 0);
+  const cl = el('div','p-sec-label');
+  cl.textContent = `Updates (${item.updates.length} comment${item.updates.length!==1?'s':''}, ${totalReplies} repl${totalReplies!==1?'ies':'y'})`;
+  pb.appendChild(cl);
 
+  // New comment box
   const cf = el('div','comment-form');
-  const ta = document.createElement('textarea'); ta.rows=3; ta.placeholder='Add a comment…'; cf.appendChild(ta);
+  const ta = document.createElement('textarea');
+  ta.rows=3; ta.placeholder='Write an update… (use @Name to mention a team member)';
+  cf.appendChild(ta);
+  const hint = el('div','comment-hint');
+  hint.textContent = 'Tip: type @Name to mention someone. Mentions will appear in monday.com notifications.';
+  cf.appendChild(hint);
   const cs2 = el('div','comment-send');
-  const sb = document.createElement('button'); sb.className='post-btn'; sb.textContent='Post Comment';
+  const sb = document.createElement('button'); sb.className='post-btn'; sb.textContent='Post Update';
   sb.addEventListener('click', async () => {
     const txt = ta.value.trim(); if (!txt) return;
     sb.disabled=true; sb.textContent='Posting…';
     try { await postComment(item.id, txt); await openPanel(item.id); }
-    catch(e) { console.error(e); sb.disabled=false; sb.textContent='Post Comment'; }
+    catch(e) { console.error(e); sb.disabled=false; sb.textContent='Post Update'; }
   });
   cs2.appendChild(sb); cf.appendChild(cs2); pb.appendChild(cf);
 
+  // Comment list with replies
   if (item.updates.length) {
     item.updates.forEach(u => {
-      const ci = el('div','comment-item');
-      const d  = new Date(u.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
-      ci.innerHTML=`<div class="comment-head"><span class="comment-author">${esc(u.creator?.name||'Unknown')}</span><span class="comment-date">${esc(d)}</span></div><div class="comment-body">${esc(u.text_body||'')}</div>`;
-      pb.appendChild(ci);
+      pb.appendChild(buildCommentItem(u, item.id));
     });
   } else {
-    const nc=el('div','no-comments'); nc.textContent='No comments yet'; pb.appendChild(nc);
+    const nc=el('div','no-comments'); nc.textContent='No updates yet'; pb.appendChild(nc);
   }
+}
+
+function buildCommentItem(u, itemId) {
+  const ci = el('div','comment-item');
+  const d  = new Date(u.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
+
+  // Header
+  const head = el('div','comment-head');
+  const author = el('span','comment-author'); author.textContent = u.creator?.name || 'Unknown';
+  const date   = el('span','comment-date');   date.textContent   = d;
+  head.appendChild(author); head.appendChild(date);
+  ci.appendChild(head);
+
+  // Body — render text with @mentions highlighted
+  const body = el('div','comment-body');
+  body.innerHTML = highlightMentions(esc(u.text_body || ''));
+  ci.appendChild(body);
+
+  // Replies list
+  const replies = u.replies || [];
+  if (replies.length) {
+    const rl = el('div','replies-list');
+    replies.forEach(r => {
+      const ri = el('div','reply-item');
+      const rd = new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
+      const rhead = el('div','comment-head');
+      const ra = el('span','comment-author'); ra.textContent = r.creator?.name || 'Unknown';
+      const rda = el('span','comment-date');  rda.textContent = rd;
+      rhead.appendChild(ra); rhead.appendChild(rda);
+      const rb = el('div','comment-body');
+      rb.innerHTML = highlightMentions(esc(r.text_body || ''));
+      ri.appendChild(rhead); ri.appendChild(rb);
+      rl.appendChild(ri);
+    });
+    ci.appendChild(rl);
+  }
+
+  // Reply button + inline reply form
+  const replyBtn = document.createElement('button');
+  replyBtn.className = 'comment-reply-btn';
+  replyBtn.textContent = replies.length ? `↩ Reply (${replies.length})` : '↩ Reply';
+  ci.appendChild(replyBtn);
+
+  const rf = el('div','reply-form');
+  const rta = document.createElement('textarea');
+  rta.rows=2; rta.placeholder='Write a reply… (use @Name to mention)';
+  rf.appendChild(rta);
+  const ractions = el('div','reply-form-actions');
+  const rsend = document.createElement('button'); rsend.className='reply-btn'; rsend.textContent='Reply';
+  const rcancel = document.createElement('button'); rcancel.className='reply-cancel'; rcancel.textContent='Cancel';
+  rcancel.addEventListener('click', () => { rf.classList.remove('open'); rta.value=''; });
+  rsend.addEventListener('click', async () => {
+    const txt = rta.value.trim(); if (!txt) return;
+    rsend.disabled=true; rsend.textContent='Posting…';
+    try { await postReply(u.id, txt); await openPanel(itemId); }
+    catch(e) { console.error(e); rsend.disabled=false; rsend.textContent='Reply'; }
+  });
+  ractions.appendChild(rcancel); ractions.appendChild(rsend);
+  rf.appendChild(ractions);
+  ci.appendChild(rf);
+
+  replyBtn.addEventListener('click', () => {
+    rf.classList.toggle('open');
+    if (rf.classList.contains('open')) rta.focus();
+  });
+
+  return ci;
+}
+
+function highlightMentions(text) {
+  // Highlight @mentions in comment text
+  return text.replace(/@([A-Za-z][A-Za-z0-9\s_-]{0,30})/g,
+    (_, name) => `<span style="color:#3b82f6;font-weight:600;">@${name}</span>`);
 }
 
 // ─────────────────────────────────────────────────────────
@@ -1033,7 +1155,9 @@ function buildAssetCard(asset) {
 // ─────────────────────────────────────────────────────────
 function openLightbox(asset) {
   $('lb-name').textContent = asset.name;
-  $('lb-open').href = asset.url;
+  // Use the original share URL for opening, not the direct URL
+  const openUrl = asset.url;
+  $('lb-open').onclick = (e) => { e.preventDefault(); window.open(openUrl, '_blank', 'noopener,noreferrer'); };
   const media = $('lb-media'); media.innerHTML='';
   renderMedia(asset, media, true);
   $('lightbox').classList.add('open');
