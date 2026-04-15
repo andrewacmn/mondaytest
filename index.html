@@ -158,10 +158,10 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #f1f5f9; color: 
 /* Mention autocomplete */
 .mention-wrap { position: relative; }
 .mention-dropdown {
-  display: none; position: absolute; left: 0; top: 100%; margin-top: 2px;
+  display: none; position: fixed;
   background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(0,0,0,.1); z-index: 200;
-  min-width: 200px; max-height: 220px; overflow-y: auto;
+  box-shadow: 0 6px 20px rgba(0,0,0,.12); z-index: 9999;
+  min-width: 220px; max-height: 240px; overflow-y: auto;
 }
 .mention-dropdown.open { display: block; }
 .mention-item {
@@ -467,47 +467,40 @@ function extractFilesFromColVal(val, colId, itemName) {
 function cleanGroupTitle(t) {
   // "5. Asset For Approval" → "Asset For Approval"
   // "8.1 Scheduled" → "Scheduled"
+  // "0. Planning" → "Planning"
   return (t || '').replace(/^[\d\.]+[\s\.\)\-]+/, '').trim();
 }
 
-function getDisplayStatus(item) {
-  const ps = (item.productionStatus || '').trim();
-  const cs = (item.conceptStatus   || '').trim();
-
-  if (/ready for client review/i.test(ps)) return 'Asset Ready for Review';
-  if (/ready for client review/i.test(cs)) return 'Concept Ready for Review';
-  if (/approved/i.test(ps))                return 'Asset Approved';
-  if (/approved/i.test(cs))                return 'Concept Approved';
-  if (/amend|change/i.test(ps))            return 'Amends Required';
-  if (/amend|change/i.test(cs))            return 'Concept Amends';
-  if (ps && !/pending/i.test(ps))          return ps;
-  if (cs && !/pending/i.test(cs))          return cs;
-
-  const g = cleanGroupTitle(item.groupTitle);
-  return g || 'Pending';
-}
-
-const STATUS_COLOURS = {
-  'asset ready for review':    '#3b82f6',
-  'concept ready for review':  '#8b5cf6',
-  'asset approved':            '#22c55e',
-  'concept approved':          '#22c55e',
-  'approved':                  '#22c55e',
-  'amends required':           '#f97316',
-  'concept amends':            '#f97316',
-  'changes requested':         '#f97316',
-  'in production':             '#a855f7',
-  'on hold':                   '#94a3b8',
-  'cancelled':                 '#ef4444',
-  'pending':                   '#94a3b8',
+// Colour for group-name based stage labels on the calendar card
+const GROUP_COLOURS = {
+  'planning':             '#94a3b8',
+  'concept for approval': '#f59e0b',
+  'to be briefed':        '#f59e0b',
+  'in production':        '#a855f7',
+  'asset for approval':   '#f97316',
+  'amends required':      '#ef4444',
+  'copy to be written':   '#f59e0b',
+  'copy for approval':    '#3b82f6',
+  'to be scheduled':      '#f59e0b',
+  'scheduled':            '#22c55e',
+  'on hold':              '#94a3b8',
+  'cancelled':            '#ef4444',
 };
-function statusColour(s) {
-  return STATUS_COLOURS[(s || '').toLowerCase()] || '#64748b';
+function groupColour(g) {
+  return GROUP_COLOURS[(g || '').toLowerCase()] || '#64748b';
 }
 
-// ─────────────────────────────────────────────────────────
-// COLUMN MAP CACHE
-// ─────────────────────────────────────────────────────────
+// Colour for status column values shown in the detail panel dropdowns
+function statusColour(s) {
+  const map = {
+    'approved':'#22c55e','ready for client review':'#3b82f6','ready for review':'#3b82f6',
+    'amends required':'#f97316','changes requested':'#f97316','in production':'#a855f7',
+    'on hold':'#94a3b8','cancelled':'#ef4444','pending':'#94a3b8',
+    'to be briefed':'#f59e0b','to be written':'#f59e0b','to be scheduled':'#f59e0b',
+    'scheduled':'#22c55e',
+  };
+  return map[(s || '').toLowerCase()] || '#64748b';
+}
 const COL_KEY = 'cc_v8_' + (CONFIG.boardId || 'x');
 const saveMap = m => localStorage.setItem(COL_KEY, JSON.stringify(m));
 const loadMap = () => { try { return JSON.parse(localStorage.getItem(COL_KEY)); } catch { return null; } };
@@ -849,8 +842,8 @@ function scrollToNow() {
 // BUILD CALENDAR EVENT BLOCK
 // ─────────────────────────────────────────────────────────
 function buildCalEvent(item) {
-  const status = getDisplayStatus(item);
-  const colour = statusColour(status);
+  const stage  = cleanGroupTitle(item.groupTitle) || 'Pending';
+  const colour = groupColour(stage);
   const primary = item.assets[0] || null;
   const y = timeToY(item.scheduledHour, item.scheduledMin);
 
@@ -896,7 +889,7 @@ function buildCalEvent(item) {
   const pill = document.createElement('div');
   pill.className = 'cal-ev-status';
   pill.style.cssText = `background:${colour}1a;color:${colour};`;
-  pill.textContent = status;
+  pill.textContent = stage;
   body.appendChild(pill);
 
   if (item.network?.length) {
@@ -1039,6 +1032,11 @@ function makeMentionInput(rows, placeholder) {
       });
       dd.appendChild(item);
     });
+    // Position below textarea using fixed coords (avoids overflow clipping)
+    const rect = ta.getBoundingClientRect();
+    dd.style.left  = rect.left + 'px';
+    dd.style.top   = (rect.bottom + 2) + 'px';
+    dd.style.width = rect.width + 'px';
     dd.classList.add('open');
   }
 
