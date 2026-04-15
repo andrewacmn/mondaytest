@@ -943,7 +943,7 @@ async function openPanel(itemId) {
 
     console.log('[openPanel] _rawCols count:', item._rawCols.length);
     console.log('[openPanel] allBoardCols count:', allBoardCols.length);
-    console.log('[openPanel] color cols:', allBoardCols.filter(c => c.type === 'color' || c.type === 'status').map(c => c.title));
+    console.log('[openPanel] allBoardCols types:', allBoardCols.map(c => c.type + ':' + c.title));
 
     renderPanel(item);
   } catch (e) {
@@ -999,21 +999,28 @@ function renderPanel(item) {
     pb.appendChild(empty);
   }
 
-  const isStatusCol = c => c.type === 'color' || c.type === 'status';
   try {
     const rawCV = item._rawCols || [];
-    console.log('[STATUS] allBoardCols:', allBoardCols.length, 'rawCV:', rawCV.length);
+    console.log('[STATUS] col types:', allBoardCols.map(c => c.type).join(', '));
 
+    // Detect status columns by JSON value structure — don't rely on type name
+    // Monday status values parse to objects with "index" or "label" or "style"
     const statusFields = allBoardCols
-      .filter(c => c.type === 'color' || c.type === 'status')
       .map(c => {
         const match = rawCV.find(r => r.id === c.id);
-        const value = (match?.text || '').trim();
-        return { id: c.id, label: c.title, value };
+        const text = (match?.text || '').trim();
+        if (!text || !match?.value) return null;
+        try {
+          const v = JSON.parse(match.value);
+          if (v && typeof v === 'object' && (v.index !== undefined || v.label !== undefined || v.style !== undefined)) {
+            return { id: c.id, label: c.title, value: text };
+          }
+        } catch {}
+        return null;
       })
-      .filter(f => f.value);
+      .filter(Boolean);
 
-    console.log('[STATUS] fields to show:', statusFields.length, statusFields.map(f => f.label + '=' + f.value));
+    console.log('[STATUS] fields found:', statusFields.map(f => f.label + '=' + f.value));
 
     if (statusFields.length) {
       pb.appendChild(mkdiv());
