@@ -366,7 +366,7 @@ function statusColour(s) {
 }
 
 // ── Column map ─────────────────────────────────────────────
-var COL_KEY = 'cc_v9_' + (CONFIG.boardId || 'x');
+var COL_KEY = 'cc_v10_' + (CONFIG.boardId || 'x');
 var saveMap = function(m) { try { localStorage.setItem(COL_KEY, JSON.stringify(m)); } catch(e){} };
 var loadMap = function() { try { return JSON.parse(localStorage.getItem(COL_KEY)); } catch(e){ return null; } };
 
@@ -472,14 +472,13 @@ function parseItem(raw, colMap) {
       if (files.length) out.assets = files;
     }
   });
-  if (!out.assets.length) {
-    for (var i = 0; i < cv.length; i++) {
-      var files2 = extractFiles(cv[i].value, raw.name);
-      if (files2.length) { out.assets = files2; break; }
-    }
-  }
+  // Only fall back to item-level monday assets — never scan other columns
+  // (avoids concept link being mistaken for a file asset)
   if (!out.assets.length && raw.assets && raw.assets.length) {
-    out.assets = normaliseAssets(raw.assets);
+    out.assets = normaliseAssets(raw.assets).filter(function(a) {
+      // Only include actual uploaded files, not link-type assets
+      return a.url && !a.url.includes('docs.google.com') && !a.url.includes('slides.google.com');
+    });
   }
   return out;
 }
@@ -714,16 +713,26 @@ function renderDetailPanel(raw) {
     var empty = el('div','p-preview-empty'); pb.appendChild(empty);
   }
 
-  // Status dropdowns from all color/status columns
+  // Status dropdowns — detect by column type name OR value JSON shape
+  // monday uses type 'color' or 'status' (varies by API version)
+  var STATUS_TYPES = { color: true, status: true };
+  // Column types that are definitely NOT status columns
+  var NON_STATUS = { date: true, text: true, long_text: true, name: true, file: true, link: true,
+    numbers: true, checkbox: true, people: true, timeline: true, week: true, world_clock: true,
+    tags: true, dropdown: true, board_relation: true, subtasks: true, formula: true, mirror: true };
   try {
     var rawCV = item._rawCols || [];
     var statusFields = allBoardCols.map(function(c) {
       var match = rawCV.find(function(r){ return r.id === c.id; });
       var text = match ? (match.text || '').trim() : '';
       if (!text || !match || !match.value) return null;
+      // Include if type is a known status type, OR if not a known non-status type
+      // AND value parses to an object (rules out plain text columns with object-like values)
+      var isStatusType = STATUS_TYPES[c.type] || !NON_STATUS[c.type];
+      if (!isStatusType) return null;
       try {
         var v = JSON.parse(match.value);
-        if (v && typeof v === 'object' && (v.index !== undefined || v.label !== undefined || v.style !== undefined)) {
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
           return { id: c.id, label: c.title, value: text };
         }
       } catch(e2) {}
