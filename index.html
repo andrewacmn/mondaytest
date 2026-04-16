@@ -227,8 +227,7 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #f1f5f9; color: 
 <script>
 const CONFIG = {
   apiToken: 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQ1NjA4NTcwMSwiYWFpIjoxMSwidWlkIjo2OTYyOTM1MSwiaWFkIjoiMjAyNS0wMS0xMFQwNjoyMTozMi4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6NjQzMTgxMCwicmduIjoidXNlMSJ9.CaVqnG51LtzKP4MTxXCflpqaZA64n0TvS6DzmK-7R84',  // ← monday.com API v2 token
-  boardId:  '18408062519
-',   // ← number from board URL
+  boardId:  '18408062519',   // ← number from board URL
   timezone: 'Australia/Sydney',     // ← change if needed
 };
 </script>
@@ -715,7 +714,7 @@ const sameDay = (a, b) => a.toDateString() === b.toDateString();
 // ─────────────────────────────────────────────────────────
 async function boot() {
   if (!CONFIG.apiToken || CONFIG.apiToken === 'YOUR_API_TOKEN_HERE')
-    return showError('API token not set', 'Open this file in a text editor and paste your token into the CONFIG block at the top.');
+    return showError('API token not set', 'Open this file and paste your token into the CONFIG block at the top.');
   if (!CONFIG.boardId || CONFIG.boardId === 'YOUR_BOARD_ID_HERE')
     return showError('Board ID not set', 'Open this file and paste your board ID into the CONFIG block at the top.');
 
@@ -732,20 +731,28 @@ async function boot() {
     setMsg('Loading content…');
     const raw = await fetchItems(colMap);
     allItems = raw.map(r => parseItem(r, colMap)).filter(i => i.scheduledDate);
-    console.log(`[boot] ${allItems.length} items with dates`);
+    console.log('[boot] ' + allItems.length + ' items with dates');
 
-    // Fetch users for @mention autocomplete (non-blocking)
-    fetchBoardUsers().then(u => { boardUsers = u; console.log('[users]', boardUsers.length); });
+    fetchBoardUsers().then(function(u) { boardUsers = u; });
 
     $('loading-screen').style.display = 'none';
     $('app').style.display = 'flex';
     renderCalendar();
-    // No auto-scroll — user can click Today to jump to now
   } catch (e) {
-    console.error(e);
-    showError('Failed to load', e.message);
+    console.error('[boot error]', e);
+    showError('Failed to load', e.message || String(e));
   }
 }
+
+// Catch any unhandled errors and show them on screen
+window.addEventListener('error', function(e) {
+  console.error('[unhandled error]', e);
+  showError('JavaScript Error', (e.message || '') + ' (line ' + e.lineno + ')');
+});
+window.addEventListener('unhandledrejection', function(e) {
+  console.error('[unhandled promise]', e);
+  showError('Error', String(e.reason || e));
+});
 
 function showError(title, msg) {
   $('loading-screen').style.display = 'none';
