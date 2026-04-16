@@ -991,6 +991,117 @@ function closePanel() {
   $('panel').classList.remove('open');
 }
 
+function highlightMentions(text) {
+  return text.replace(/@([A-Za-z][A-Za-z0-9\s_-]{0,40})/g,
+    function(_, name) { return '<span style="color:#3b82f6;font-weight:600;">@' + name + '</span>'; });
+}
+
+function makeMentionInput(rows, placeholder) {
+  var wrap = el('div', 'mention-wrap');
+  var ta = document.createElement('textarea');
+  ta.rows = rows;
+  ta.placeholder = placeholder;
+  ta.style.cssText = 'width:100%;border:1px solid #e2e8f0;border-radius:6px;padding:9px 11px;font-size:12px;font-family:inherit;resize:none;outline:none;line-height:1.5;';
+
+  var dd = el('div', 'mention-dropdown');
+  wrap.appendChild(ta);
+  wrap.appendChild(dd);
+
+  var mentionMap = {};
+  var activeIndex = -1;
+
+  function getQuery() {
+    var pos = ta.selectionStart;
+    var before = ta.value.slice(0, pos);
+    var m = before.match(/@([\w\s]*)$/);
+    return m ? { query: m[1].toLowerCase(), start: pos - m[0].length } : null;
+  }
+
+  function showDropdown(items, atStart) {
+    dd.innerHTML = '';
+    activeIndex = -1;
+    if (!items.length) { dd.classList.remove('open'); return; }
+    items.forEach(function(u) {
+      var item = el('div', 'mention-item');
+      var av = el('div', 'mention-avatar');
+      if (u.photo_thumb) {
+        var img = document.createElement('img');
+        img.src = u.photo_thumb; img.alt = u.name;
+        av.appendChild(img);
+      } else {
+        av.textContent = u.name.split(' ').map(function(p){ return p[0]; }).join('').slice(0,2).toUpperCase();
+      }
+      var nm = el('span', 'mention-name'); nm.textContent = u.name;
+      item.appendChild(av); item.appendChild(nm);
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        insertMention(u, atStart);
+        dd.classList.remove('open');
+      });
+      dd.appendChild(item);
+    });
+    var rect = ta.getBoundingClientRect();
+    dd.style.left  = rect.left + 'px';
+    dd.style.top   = (rect.bottom + 2) + 'px';
+    dd.style.width = rect.width + 'px';
+    dd.classList.add('open');
+  }
+
+  function insertMention(user, atStart) {
+    var pos = ta.selectionStart;
+    var before = ta.value.slice(0, atStart);
+    var after  = ta.value.slice(pos);
+    var insert = '@' + user.name + ' ';
+    ta.value = before + insert + after;
+    mentionMap[user.name] = user.id;
+    var newPos = before.length + insert.length;
+    ta.setSelectionRange(newPos, newPos);
+    ta.focus();
+  }
+
+  ta.addEventListener('input', function() {
+    var q = getQuery();
+    if (!q) { dd.classList.remove('open'); return; }
+    var results = boardUsers
+      .filter(function(u) { return u.name.toLowerCase().includes(q.query); })
+      .slice(0, 8);
+    showDropdown(results, q.start);
+  });
+
+  ta.addEventListener('keydown', function(e) {
+    if (!dd.classList.contains('open')) return;
+    var items = dd.querySelectorAll('.mention-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, items.length - 1);
+      items.forEach(function(it, i) { it.style.background = i === activeIndex ? '#f1f5f9' : ''; });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, 0);
+      items.forEach(function(it, i) { it.style.background = i === activeIndex ? '#f1f5f9' : ''; });
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault();
+      if (items[activeIndex]) items[activeIndex].dispatchEvent(new MouseEvent('mousedown'));
+    } else if (e.key === 'Escape') {
+      dd.classList.remove('open');
+    }
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!wrap.contains(e.target)) dd.classList.remove('open');
+  }, true);
+
+  ta.getFormattedText = function() {
+    var text = ta.value;
+    Object.keys(mentionMap).forEach(function(name) {
+      text = text.split('@' + name).join('{@' + mentionMap[name] + '}');
+    });
+    return text;
+  };
+
+  return { wrap: wrap, ta: ta };
+}
+
 function renderPanel(item) {
   $('panel-title').textContent = item.name;
   const pb = $('panel-body');
