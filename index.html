@@ -713,34 +713,18 @@ function renderDetailPanel(raw) {
     var empty = el('div','p-preview-empty'); pb.appendChild(empty);
   }
 
-  // Status dropdowns:
-  // - Always show the 3 core columns (Concept Status, Asset Status, Copy Status) even if empty
-  // - Any other status columns only appear if they actually have a value set
-  var CORE_STATUS = /concept.status|asset.status|production.status|copy.status/i;
-  var STATUS_TYPES = { color: true, status: true };
-  var NON_STATUS = { date: true, text: true, long_text: true, name: true, file: true, link: true,
-    numbers: true, checkbox: true, people: true, timeline: true, week: true, world_clock: true,
-    tags: true, dropdown: true, board_relation: true, subtasks: true, formula: true, mirror: true,
-    item_id: true, creation_log: true, last_updated: true, auto_number: true };
+  // Status dropdowns — find ONLY the three specific columns by title
+  // This is the only reliable approach; type-based detection always grabs too many columns
+  var WANTED_TITLES = ['concept status', 'asset status', 'production status', 'copy status'];
   try {
     var rawCV = item._rawCols || [];
-    var statusFields = allBoardCols.filter(function(c) {
-      return STATUS_TYPES[c.type] || (!NON_STATUS[c.type]);
-    }).map(function(c) {
-      var match = rawCV.find(function(r){ return r.id === c.id; });
-      var text = match ? (match.text || '').trim() : '';
-      // Verify it's a status column via JSON shape when value present
-      if (match && match.value) {
-        try {
-          var v = JSON.parse(match.value);
-          if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
-        } catch(e2) { return null; }
-      } else if (!match || !match.value) {
-        // No value — only include if it's a core status column
-        if (!CORE_STATUS.test(c.title)) return null;
-      }
-      return { id: c.id, label: c.title, value: text };
-    }).filter(Boolean);
+    var statusFields = allBoardCols
+      .filter(function(c) { return WANTED_TITLES.indexOf(c.title.toLowerCase()) !== -1; })
+      .map(function(c) {
+        var match = rawCV.find(function(r){ return r.id === c.id; });
+        var text = match ? (match.text || '').trim() : '';
+        return { id: c.id, label: c.title, value: text };
+      });
     if (statusFields.length) {
       pb.appendChild(pdiv());
       var row = el('div','p-status-row');
