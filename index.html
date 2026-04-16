@@ -713,30 +713,29 @@ function renderDetailPanel(raw) {
     var empty = el('div','p-preview-empty'); pb.appendChild(empty);
   }
 
-  // Status dropdowns — detect by column type name OR value JSON shape
-  // monday uses type 'color' or 'status' (varies by API version)
+  // Status dropdowns — show ALL status-type columns from the board,
+  // even if this particular item has no value set for that column yet
   var STATUS_TYPES = { color: true, status: true };
-  // Column types that are definitely NOT status columns
   var NON_STATUS = { date: true, text: true, long_text: true, name: true, file: true, link: true,
     numbers: true, checkbox: true, people: true, timeline: true, week: true, world_clock: true,
-    tags: true, dropdown: true, board_relation: true, subtasks: true, formula: true, mirror: true };
+    tags: true, dropdown: true, board_relation: true, subtasks: true, formula: true, mirror: true,
+    item_id: true, creation_log: true, last_updated: true, auto_number: true };
   try {
     var rawCV = item._rawCols || [];
-    var statusFields = allBoardCols.map(function(c) {
+    // Collect all status-type columns from the board
+    var statusFields = allBoardCols.filter(function(c) {
+      return STATUS_TYPES[c.type] || (!NON_STATUS[c.type] && c.type !== undefined);
+    }).map(function(c) {
       var match = rawCV.find(function(r){ return r.id === c.id; });
       var text = match ? (match.text || '').trim() : '';
-      if (!text || !match || !match.value) return null;
-      // Include if type is a known status type, OR if not a known non-status type
-      // AND value parses to an object (rules out plain text columns with object-like values)
-      var isStatusType = STATUS_TYPES[c.type] || !NON_STATUS[c.type];
-      if (!isStatusType) return null;
-      try {
-        var v = JSON.parse(match.value);
-        if (v && typeof v === 'object' && !Array.isArray(v)) {
-          return { id: c.id, label: c.title, value: text };
-        }
-      } catch(e2) {}
-      return null;
+      // Verify it's actually a status column by checking JSON shape when value exists
+      if (match && match.value) {
+        try {
+          var v = JSON.parse(match.value);
+          if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+        } catch(e2) { return null; }
+      }
+      return { id: c.id, label: c.title, value: text };
     }).filter(Boolean);
     if (statusFields.length) {
       pb.appendChild(pdiv());
@@ -745,9 +744,14 @@ function renderDetailPanel(raw) {
         var field = el('div','p-field');
         var flbl = document.createElement('label'); flbl.textContent = sf.label; field.appendChild(flbl);
         var sel = document.createElement('select');
-        var base = ['Pending','To Be Briefed','To Be Written','To Be Scheduled','Ready For Client Review','Ready for Client Review','In Production','Approved','Amends Required','On Hold','Cancelled','Scheduled'];
-        var seen = {}; [sf.value].concat(base).forEach(function(o){ if(!seen[o]){seen[o]=1;sel.appendChild(new Option(o,o));} });
-        sel.value = sf.value;
+        var base = ['','Pending','To Be Briefed','To Be Written','To Be Scheduled','Ready For Client Review','Ready for Client Review','In Production','Approved','Amends Required','On Hold','Cancelled','Scheduled'];
+        var seen = {};
+        if (sf.value) seen[sf.value] = 1;
+        [sf.value].concat(base).forEach(function(o){
+          if (o === '' && !sf.value) { var opt = new Option('— not set —',''); seen['']=1; sel.appendChild(opt); return; }
+          if (o && !seen[o]){seen[o]=1;sel.appendChild(new Option(o,o));}
+        });
+        sel.value = sf.value || '';
         sel.style.cssText = 'font-weight:600;color:' + statusColour(sf.value) + ';';
         (function(colId) {
           sel.addEventListener('change', function() {
